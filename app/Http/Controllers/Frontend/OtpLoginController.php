@@ -47,10 +47,16 @@ class OtpLoginController extends Controller
         $rawPhone = preg_replace('/^(\+?88)(?=01)/', '', $rawPhone);
         $request->merge(['phone' => $rawPhone !== '' ? $rawPhone : null]);
 
+        $request->merge([
+            'email' => Str::lower(trim((string) $request->input('email'))),
+        ]);
+
         $data = $request->validate([
-            'email' => ['required', 'email:rfc', 'max:150'],
+            'email' => ['required', 'email:rfc,dns', 'max:150'],
             'phone' => ['nullable', 'regex:/^01[3-9]\d{8}$/'],
         ], [
+            'email.email' => 'Please verify your email address and enter a valid email you can access.',
+            'email.required' => 'Please verify your email address before continuing.',
             'phone.regex' => 'Please enter a valid Bangladeshi mobile number (01XXXXXXXXX).',
         ]);
 
@@ -75,10 +81,11 @@ class OtpLoginController extends Controller
             $this->issueOtp($email);
         } catch (\Throwable $e) {
             Log::error('OTP send failed: ' . $e->getMessage());
+            EmailOtp::where('email', $email)->delete();
 
             return back()
                 ->withInput()
-                ->withErrors(['email' => 'Could not send the verification code. Please try again.']);
+                ->withErrors(['email' => 'Please verify your email address. We could not send the OTP to it.']);
         }
 
         $request->session()->put('otp_email', $email);
@@ -154,7 +161,8 @@ class OtpLoginController extends Controller
         $this->rememberPhone($user, $request->session()->pull('otp_phone'));
 
         // remember = true => customer abar ashle verify korte hobe na
-        Auth::login($user, true);
+        // Do not issue a persistent remember-me cookie; logout must require verification again.
+        Auth::login($user, false);
         $request->session()->regenerate();
         $request->session()->forget('otp_email');
 
@@ -213,37 +221,8 @@ class OtpLoginController extends Controller
     /** Email + password diye login (customer dashboard theke password set korle) */
     public function passwordLogin(Request $request)
     {
-        $email    = Str::lower(trim((string) $request->input('email')));
-        $password = (string) $request->input('password');
-
-        $user = $email !== '' ? User::where('email', $email)->first() : null;
-
-        $ok = $user
-            && $user->password_set_at
-            && Hash::check($password, $user->password);
-
-        if (! $ok) {
-            return back()
-                ->withInput($request->only('email'))
-                ->withErrors(['pw' => 'Email or password is incorrect. If you have not set a password, use the email code login.']);
-        }
-
-        if ($this->isStaff($user)) {
-            return back()
-                ->withInput($request->only('email'))
-                ->withErrors(['pw' => 'This email belongs to a staff account. Please use the staff login.']);
-        }
-
-        Auth::login($user, true);
-        $request->session()->regenerate();
-
-        // Password diye login : OTP verified chinho thakbe na (password change e current password lagbe)
-        $request->session()->forget('otp_verified_at');
-
-        $customer = Customer::firstOrCreate(['user_id' => $user->id]);
-        $this->cartService->mergeGuestCartIntoCustomer($customer->id);
-
-        return redirect()->intended(route('homes'));
+        return redirect()->route('otp.login')
+            ->withErrors(['email' => 'Please verify your email with the code we send you.']);
     }
 
     // ------------------------------------------------------------------

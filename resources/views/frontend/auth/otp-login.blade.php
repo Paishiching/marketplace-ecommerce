@@ -67,7 +67,7 @@
 
                         <div class="ebl-or">and</div>
 
-                        <input type="email" name="email" id="emailInput" class="ebl-input" value="{{ old('email') }}" placeholder="Enter Your Email" autocomplete="email">
+                        <input type="email" name="email" id="emailInput" class="ebl-input" value="{{ old('email') }}" placeholder="Enter Your Email" autocomplete="email" required>
                         @error('email')<span class="ebl-err">{{ $message }}</span>@enderror
 
                         @if(config('recaptcha.site_key'))
@@ -80,26 +80,15 @@
                         <button type="submit" class="ebl-login" id="loginBtn">Login</button>
                     </form>
 
-                    <div class="ebl-or">or</div>
+                    @if(config('services.google.client_id') && config('services.google.client_secret'))
+                        <div class="ebl-or">or</div>
+                        <button type="button" class="ebl-google" id="googleBtn" aria-label="Continue with Google">
+                            <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+                            <span>Continue with Google</span>
+                        </button>
+                    @endif
 
-                    <button type="button" class="ebl-google" id="googleBtn" aria-label="Continue with Google">
-                        <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
-                        <span>Google</span>
-                    </button>
 
-                    {{-- ===== Email + Password login (dashboard theke password set korle) ===== --}}
-                    <button type="button" class="ebl-pwtoggle" id="pwToggle">Login with password</button>
-
-                    <form method="POST" action="{{ route('otp.password') }}" id="pwForm" style="{{ $errors->has('pw') ? '' : 'display:none;' }}margin-top:10px" novalidate>
-                        @csrf
-                        <input type="email" name="email" class="ebl-input" placeholder="Email" value="{{ old('email') }}" autocomplete="email">
-                        <input type="password" name="password" class="ebl-input" placeholder="Password" style="margin-top:10px" autocomplete="current-password">
-                        @error('pw')<span class="ebl-err">{{ $message }}</span>@enderror
-                        <button type="submit" class="ebl-login">Login</button>
-                        <p class="ebl-pwnote">
-                            Forgot your password? Enter your email in the box above and sign in with the code we send you, then set a new password from your account.
-                        </p>
-                    </form>
                 </div>
 
                 <div class="ebl-right">
@@ -134,6 +123,12 @@
                     showErr('Please enter your email address.');
                     return;
                 }
+                if (!email.checkValidity()) {
+                    e.preventDefault();
+                    showErr('Please check the email address format.');
+                    email.focus();
+                    return;
+                }
 
                 // phone optional, kintu dile thik format hote hobe (01XXXXXXXXX / +8801XXXXXXXXX)
                 var p = phone.value.replace(/[\s\-]/g, '');
@@ -154,17 +149,12 @@
                 btn.textContent = 'Sending code...';
             });
 
-            // Password login form show/hide
-            document.getElementById('pwToggle').addEventListener('click', function () {
-                var f = document.getElementById('pwForm');
-                f.style.display = (f.style.display === 'none') ? 'block' : 'none';
-            });
-
-            document.getElementById('googleBtn').addEventListener('click', function () {
-                if (typeof showToast === 'function') {
-                    showToast('Not available', 'Google login is not available yet.', 'error');
-                }
-            });
+            var googleBtn = document.getElementById('googleBtn');
+            if (googleBtn) {
+                googleBtn.addEventListener('click', function () {
+                    window.location.href = "{{ url('/auth/google/redirect') }}";
+                });
+            }
         })();
     </script>
 

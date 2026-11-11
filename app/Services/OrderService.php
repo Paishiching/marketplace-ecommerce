@@ -155,7 +155,7 @@ class OrderService
             return ShippingAddress::findOrFail($data['shipping_address_id']);
         }
 
-        return ShippingAddress::create([
+        $values = [
             'customer_id'   => $customerId,
             'recipient_name'=> $data['name'] ?? null,
             'phone'         => $data['phone'],
@@ -163,9 +163,26 @@ class OrderService
             'address_line2' => $data['address_line2'] ?? null,
             'city'          => $data['city'],
             'state'         => null,
-            'postal_code'   => $data['postal_code'] ?? null,
             'country'       => 'Bangladesh',
-        ]);
+        ];
+
+        // Keep the first checkout address on the customer profile and update
+        // that saved entry on later orders instead of creating duplicates.
+        if ($customerId) {
+            $address = ShippingAddress::query()
+                ->where('customer_id', $customerId)
+                ->where('phone', $values['phone'])
+                ->where('address_line1', $values['address_line1'])
+                ->where('city', $values['city'])
+                ->first();
+
+            if ($address) {
+                $address->forceFill($values)->save();
+                return $address;
+            }
+        }
+
+        return ShippingAddress::create($values);
     }
 
     protected function generateOrderNumber(): string

@@ -140,6 +140,8 @@ Route::group([], function () {
     Route::post('/login-verify/code', [\App\Http\Controllers\Frontend\OtpLoginController::class, 'verify'])->middleware('throttle:10,1')->name('otp.verify');
     Route::post('/login-verify/resend', [\App\Http\Controllers\Frontend\OtpLoginController::class, 'resend'])->middleware('throttle:6,1')->name('otp.resend');
     Route::post('/login-verify/password', [\App\Http\Controllers\Frontend\OtpLoginController::class, 'passwordLogin'])->middleware('throttle:6,1')->name('otp.password');
+    Route::get('/auth/google/redirect', [\App\Http\Controllers\Frontend\GoogleAuthController::class, 'redirect'])->name('google.login');
+    Route::get('/auth/google/callback', [\App\Http\Controllers\Frontend\GoogleAuthController::class, 'callback'])->name('google.callback');
 });
 
 /*

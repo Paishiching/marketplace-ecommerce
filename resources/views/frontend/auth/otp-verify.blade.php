@@ -13,7 +13,7 @@
         .ebl-msg b{color:#fd6801}
 
         .ebl-otp{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px}
-        .ebl-otp input{width:52px;height:52px;border:1px solid rgba(42,53,130,.45);border-radius:50%;background:#fff;text-align:center;font-size:22px;font-weight:600;color:#2a3582;outline:none;padding:0;transition:border-color .2s,box-shadow .2s}
+        .ebl-otp input{display:block;width:100%;max-width:300px;height:54px;border:1px solid rgba(42,53,130,.45);border-radius:12px;background:#fff;text-align:center;font-size:22px;font-weight:600;letter-spacing:10px;color:#2a3582;outline:none;padding:0 12px 0 22px;transition:border-color .2s,box-shadow .2s}
         .ebl-otp input:focus{border-color:#fd6801;box-shadow:0 0 0 3px rgba(253,104,1,.25)}
         .ebl-otp .dash{color:#2a3582;opacity:.6;font-size:14px}
 
@@ -40,8 +40,7 @@
             .ebl-card{grid-template-columns:1fr;min-height:0}
             .ebl-right{display:none}
             .ebl-left{padding:28px 18px}
-            .ebl-otp{gap:6px}
-            .ebl-otp input{width:42px;height:42px;font-size:18px}
+            .ebl-otp input{height:50px;font-size:20px}
         }
     </style>
 
@@ -63,16 +62,8 @@
 
                     <form method="POST" action="{{ route('otp.verify') }}" id="otpVerifyForm" novalidate>
                         @csrf
-                        <input type="hidden" name="otp" id="otpValue">
-
                         <div class="ebl-otp" id="otpBoxes">
-                            <input type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" autofocus>
-                            <input type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
-                            <input type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
-                            <span class="dash">-</span>
-                            <input type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
-                            <input type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
-                            <input type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
+                            <input type="text" name="otp" id="otpValue" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="Enter 6-digit code" autofocus required>
                         </div>
 
                         {{-- Email theke copy kora code ek click e boshay --}}
@@ -108,64 +99,45 @@
 
     <script>
         (function () {
-            var boxes   = Array.prototype.slice.call(document.querySelectorAll('#otpBoxes input'));
-            var hidden  = document.getElementById('otpValue');
+            var codeInput = document.getElementById('otpValue');
             var form    = document.getElementById('otpVerifyForm');
             var verify  = document.getElementById('verifyBtn');
             var submitted = false;
 
             function collect() {
-                hidden.value = boxes.map(function (b) { return b.value; }).join('');
+                codeInput.value = codeInput.value.replace(/\D/g, '').slice(0, 6);
             }
             function submitNow() {
                 if (submitted) return;
                 form.requestSubmit ? form.requestSubmit() : form.submit();
             }
-            // 6 digit code sob box e boshay
+            // A single one-time-code field supports browser/email OTP autofill.
             function fillCode(code) {
                 code = String(code || '').replace(/\D/g, '').slice(0, 6);
                 if (!code) return;
-                boxes.forEach(function (b, k) { b.value = code[k] || ''; });
+                codeInput.value = code;
                 collect();
-                boxes[Math.min(code.length, 5)].focus();
+                codeInput.focus();
                 if (code.length === 6) submitNow();
             }
 
-            boxes.forEach(function (box, i) {
-                box.addEventListener('input', function () {
-                    var digits = this.value.replace(/\D/g, '');
-                    // keyboard suggestion / autofill e ekshathe 6 digit ashle
-                    if (digits.length > 1) { fillCode(digits); return; }
-                    this.value = digits.slice(0, 1);
-                    if (this.value && boxes[i + 1]) boxes[i + 1].focus();
-                    collect();
-                    if (hidden.value.length === 6) submitNow();
-                });
-
-                box.addEventListener('keydown', function (e) {
-                    if (e.key === 'Backspace' && !this.value && boxes[i - 1]) {
-                        boxes[i - 1].focus();
-                        boxes[i - 1].value = '';
-                        collect();
-                    }
-                    if (e.key === 'ArrowLeft' && boxes[i - 1]) boxes[i - 1].focus();
-                    if (e.key === 'ArrowRight' && boxes[i + 1]) boxes[i + 1].focus();
-                });
-
-                box.addEventListener('paste', function (e) {
-                    var text = (e.clipboardData || window.clipboardData).getData('text');
-                    if (!text) return;
-                    e.preventDefault();
-                    fillCode(text);
-                });
+            codeInput.addEventListener('input', function () {
+                collect();
+                if (codeInput.value.length === 6) submitNow();
+            });
+            codeInput.addEventListener('paste', function (e) {
+                var text = (e.clipboardData || window.clipboardData).getData('text');
+                if (!text) return;
+                e.preventDefault();
+                fillCode(text);
             });
 
             // Paste code button : clipboard theke 6 digit khuje boshay
             var pasteBtn = document.getElementById('pasteOtp');
             pasteBtn.addEventListener('click', function () {
                 if (!navigator.clipboard || !navigator.clipboard.readText) {
-                    if (typeof showToast === 'function') showToast('Paste', 'Long-press the first box and choose Paste.', 'error');
-                    boxes[0].focus();
+                    if (typeof showToast === 'function') showToast('Paste', 'Long-press the code field and choose Paste.', 'error');
+                    codeInput.focus();
                     return;
                 }
                 navigator.clipboard.readText().then(function (t) {
@@ -173,7 +145,7 @@
                     if (m) { fillCode(m[0]); }
                     else if (typeof showToast === 'function') { showToast('Paste', 'No 6-digit code found in clipboard.', 'error'); }
                 }).catch(function () {
-                    if (typeof showToast === 'function') showToast('Paste', 'Clipboard access denied. Long-press a box and choose Paste.', 'error');
+                    if (typeof showToast === 'function') showToast('Paste', 'Clipboard access denied. Long-press the code field and choose Paste.', 'error');
                 });
             });
 
@@ -188,7 +160,7 @@
 
             form.addEventListener('submit', function (e) {
                 collect();
-                if (hidden.value.length !== 6) {
+                if (codeInput.value.length !== 6) {
                     e.preventDefault();
                     if (typeof showToast === 'function') showToast('OTP', 'Please enter the 6-digit code.', 'error');
                     return;
