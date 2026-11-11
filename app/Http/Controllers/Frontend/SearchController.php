@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -12,16 +13,39 @@ class SearchController extends Controller
     public function index(Request $request)
     {
         $q = trim($request->input('q', ''));
+        $imageCategories = Category::query()
+            ->where('status', true)
+            ->whereNull('parent_id')
+            ->with(['children' => fn ($query) => $query->where('status', true)])
+            ->orderBy('name')
+            ->get()
+            ->flatMap(fn ($category) => collect([$category])->merge($category->children))
+            ->take(30)
+            ->values();
 
         $products = Product::query()
             ->with(['brand', 'primaryImage'])
             ->withCount('reviews')
-            ->where('status', true)
+            ->active()
             ->when($q !== '', function ($query) use ($q) {
                 $query->where(function ($sub) use ($q) {
                     $sub->where('name', 'like', "%{$q}%")
                         ->orWhere('sku', 'like', "%{$q}%")
-                        ->orWhere('short_description', 'like', "%{$q}%");
+                        ->orWhere('short_description', 'like', "%{$q}%")
+                        ->orWhereHas('brand', function ($brand) use ($q) {
+                            $brand->where('name', 'like', "%{$q}%");
+                        })
+                        ->orWhereHas('productSpecifications', function ($spec) use ($q) {
+                            $spec->where('name', 'like', '%model%')
+                                ->where('value', 'like', "%{$q}%");
+                        })
+                        ->orWhereHas('productAttributes', function ($productAttribute) use ($q) {
+                            $productAttribute->whereHas('attribute', function ($attribute) {
+                                $attribute->where('name', 'like', '%model%');
+                            })->whereHas('attributeValue', function ($value) use ($q) {
+                                $value->where('value', 'like', "%{$q}%");
+                            });
+                        });
                 });
             }, function ($query) {
                 $query->whereRaw('1 = 0');
@@ -30,11 +54,21 @@ class SearchController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('frontend.search.index', compact('products', 'q'));
+        return view('frontend.search.index', compact('products', 'q', 'imageCategories'));
     }
 
     public function image(Request $request)
     {
+        $imageCategories = Category::query()
+            ->where('status', true)
+            ->whereNull('parent_id')
+            ->with(['children' => fn ($query) => $query->where('status', true)])
+            ->orderBy('name')
+            ->get()
+            ->flatMap(fn ($category) => collect([$category])->merge($category->children))
+            ->take(30)
+            ->values();
+
         $request->validate(['image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120']]);
         if (! function_exists('imagecreatefromstring')) {
             return back()->withErrors(['image' => 'Image search is unavailable on this server. Please search by product name.']);
@@ -49,7 +83,7 @@ class SearchController extends Controller
         // Keep image matching bounded so a large catalog cannot make one request
         // decode every product image synchronously.
         $candidates = Product::query()
-            ->where('status', true)
+            ->active()
             ->with('primaryImage')
             ->select(['id', 'thumbnail'])
             ->orderByDesc('id')
@@ -79,7 +113,7 @@ class SearchController extends Controller
             ->withCount('reviews')->get()
             ->sortBy(fn ($product) => array_search($product->id, $ids, true))->values();
         $q = '';
-        return view('frontend.search.index', compact('products', 'q'))->with('imageSearch', true);
+        return view('frontend.search.index', compact('products', 'q', 'imageCategories'))->with('imageSearch', true);
     }
 
     private function imageSignature(string|false $contents): ?array
