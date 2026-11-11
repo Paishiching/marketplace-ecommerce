@@ -1,0 +1,1 @@
+{{-- blog/shop.blade.php --}}

@@ -1,0 +1,1 @@
+{{-- campaigns/index.blade.php --}}

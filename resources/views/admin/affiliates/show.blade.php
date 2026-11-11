@@ -1,0 +1,1 @@
+{{-- affiliates/shop.blade.php --}}

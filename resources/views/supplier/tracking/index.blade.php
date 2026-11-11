@@ -1,0 +1,1 @@
+{{-- tracking/index.blade.php --}}

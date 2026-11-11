@@ -1,0 +1,1 @@
+{{-- finance/shop.blade.php --}}

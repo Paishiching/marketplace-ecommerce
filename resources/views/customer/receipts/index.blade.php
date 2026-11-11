@@ -1,0 +1,1 @@
+{{-- receipts/index.blade.php --}}

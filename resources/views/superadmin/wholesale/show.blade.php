@@ -1,0 +1,1 @@
+{{-- wholesale/shop.blade.php --}}

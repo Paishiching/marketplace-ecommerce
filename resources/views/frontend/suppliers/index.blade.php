@@ -1,0 +1,1 @@
+{{-- suppliers/index.blade.php --}}

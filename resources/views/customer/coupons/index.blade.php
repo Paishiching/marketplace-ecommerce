@@ -1,0 +1,1 @@
+{{-- coupons/index.blade.php --}}

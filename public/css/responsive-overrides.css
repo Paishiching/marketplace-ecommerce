@@ -1,0 +1,101 @@
+/* Shared small-screen safeguards for the storefront and every dashboard. */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    max-width: 100%;
+    overflow-x: clip;
+}
+
+img,
+video,
+iframe {
+    max-width: 100%;
+}
+
+@media (max-width: 767.98px) {
+    .page-wrapper,
+    .page-content,
+    .content-wrapper,
+    .container-fluid,
+    main {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .page-content {
+        padding: 14px 12px !important;
+    }
+
+    .row > *,
+    .card,
+    .card-body,
+    .modal-content {
+        min-width: 0;
+    }
+
+    .card-body {
+        overflow-wrap: anywhere;
+    }
+
+    .table-responsive,
+    .dataTables_wrapper,
+    .table-wrap,
+    .overflow-auto {
+        max-width: 100%;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .page-content table,
+    .card-body table {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .page-content input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    .page-content select,
+    .page-content textarea,
+    .card-body input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+    .card-body select,
+    .card-body textarea {
+        max-width: 100%;
+    }
+
+    .page-content .btn-group,
+    .card-header,
+    .modal-header,
+    .modal-footer {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .btn {
+        max-width: 100%;
+        white-space: normal;
+    }
+
+    .modal-dialog {
+        width: auto;
+        max-width: calc(100vw - 20px);
+        margin: 10px;
+    }
+
+    .chart,
+    [id*="chart"],
+    [class*="chart"] {
+        max-width: 100%;
+    }
+
+    .eb-bottom-nav {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}

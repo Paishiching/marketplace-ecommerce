@@ -1,0 +1,145 @@
+<?php
+
+namespace App\Http\Controllers\Customer;
+
+use App\Http\Controllers\Controller;
+use App\Models\Customer;
+use App\Models\Order;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rules\Password;
+
+class AccountController extends Controller
+{
+    protected function customer(): Customer
+    {
+        return Customer::firstOrCreate(['user_id' => Auth::id()]);
+    }
+
+    public function dashboard()
+    {
+        $customer = $this->customer();
+        $base     = Order::where('customer_id', $customer->id);
+
+        $stats = [
+            'total'   => (clone $base)->count(),
+            'pending' => (clone $base)->where('status', 'pending')->count(),
+            'spent'   => (float) (clone $base)->where('status', '!=', 'cancelled')->sum('total'),
+        ];
+
+        $orders = (clone $base)->with('orderItems')->latest()->take(5)->get();
+
+        return view('customer.account.dashboard', compact('stats', 'orders'));
+    }
+
+    public function orders()
+    {
+        $orders = Order::where('customer_id', $this->customer()->id)
+            ->with('orderItems')
+            ->latest()
+            ->paginate(10);
+
+        return view('customer.account.orders', compact('orders'));
+    }
+
+    public function addresses()
+    {
+        $addresses = $this->customer()->shippingAddress()->latest()->get();
+
+        return view('customer.account.addresses', compact('addresses'));
+    }
+
+    public function addressDestroy($address)
+    {
+        $this->customer()->shippingAddress()->findOrFail($address)->delete();
+
+        return back()->with('success', 'Address deleted.');
+    }
+
+    public function profile()
+    {
+        $user     = Auth::user();
+        $customer = $this->customer();
+        $phone    = $user->phone ?? $customer->phone ?? '';
+
+        return view('customer.account.profile', compact('user', 'customer', 'phone'));
+    }
+
+    public function profileUpdate(Request $request)
+    {
+        $data = $request->validate([
+            'name'          => ['required', 'string', 'max:120'],
+            'phone'         => ['nullable', 'regex:/^01[3-9]\d{8}$/'],
+            'gender'        => ['nullable', 'in:male,female,other'],
+            'date_of_birth' => ['nullable', 'date', 'before:today'],
+        ], [
+            'phone.regex' => 'Please enter a valid Bangladeshi mobile number (01XXXXXXXXX).',
+        ]);
+
+        $user     = Auth::user();
+        $customer = $this->customer();
+
+        $userValues = ['name' => $data['name']];
+        if (Schema::hasColumn('users', 'phone')) {
+            $userValues['phone'] = $data['phone'] ?? null;
+        }
+        $user->forceFill($userValues)->save();
+
+        $customerValues = [
+            'gender'        => $data['gender'] ?? null,
+            'date_of_birth' => $data['date_of_birth'] ?? null,
+        ];
+        if (Schema::hasColumn('customers', 'phone')) {
+            $customerValues['phone'] = $data['phone'] ?? null;
+        }
+        $customer->forceFill($customerValues)->save();
+
+        return back()->with('success', 'Profile updated successfully.');
+    }
+
+    public function password()
+    {
+        $hasPassword = ! is_null(Auth::user()->password_set_at);
+
+        // OTP diye 30 minute er moddhe login korle current password lagbe na
+        $needsCurrent = $hasPassword && ! $this->recentOtpLogin();
+
+        return view('customer.account.password', compact('hasPassword', 'needsCurrent'));
+    }
+
+    public function passwordUpdate(Request $request)
+    {
+        $user         = Auth::user();
+        $hasPassword  = ! is_null($user->password_set_at);
+        $needsCurrent = $hasPassword && ! $this->recentOtpLogin();
+
+        $rules = [
+            'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
+        ];
+
+        if ($needsCurrent) {
+            $rules['current_password'] = ['required', 'current_password'];
+        }
+
+        $request->validate($rules);
+
+        $user->forceFill([
+            'password'        => Hash::make($request->input('password')),
+            'password_set_at' => now(),
+        ])->save();
+
+        return back()->with('success', $hasPassword
+            ? 'Password changed successfully.'
+            : 'Password set successfully. Now you can login with email and password.');
+    }
+
+    /** Last 30 minute er moddhe OTP verify kora hoyeche kina */
+    protected function recentOtpLogin(): bool
+    {
+        $at = session('otp_verified_at');
+
+        return $at && (now()->timestamp - (int) $at) <= 1800;
+    }
+}

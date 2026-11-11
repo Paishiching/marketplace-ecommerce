@@ -1,0 +1,1 @@
+{{-- pricing/index.blade.php --}}

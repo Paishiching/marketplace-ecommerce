@@ -1,0 +1,1 @@
+{{-- faq/index.blade.php --}}

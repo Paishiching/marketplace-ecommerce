@@ -1,0 +1,1 @@
+{{-- brands/shop.blade.php --}}

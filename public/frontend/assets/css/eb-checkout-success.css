@@ -1,0 +1,37 @@
+/* =====================================================================
+   Checkout success (cs) : only 3 colors => #2a3582 navy | #fd6801 orange | #ffffff white
+   Blade : resources/views/frontend/checkout/success.blade.php
+   ===================================================================== */
+.cs-page{
+    --cs-navy:#2a3582;
+    --cs-navy-rgb:42,53,130;
+    --cs-orange:#fd6801;
+    --cs-line:rgba(42,53,130,.18);
+    --cs-tint:rgba(42,53,130,.07);
+    background:var(--cs-tint);
+    padding:14px 0 60px;
+    font-family:'Poppins','Open Sans',sans-serif;
+    color:var(--cs-navy);
+}
+.cs-card{background:#fff;border-radius:6px;max-width:960px;margin:0 auto;padding:18px 20px 44px;text-align:center}
+
+.cs-check{position:relative;width:180px;height:120px;margin:0 auto}
+.cs-check svg.dots{position:absolute;inset:0;width:100%;height:100%}
+.cs-badge{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:var(--cs-orange);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(253,104,1,.35);animation:csPop .5s cubic-bezier(.2,1.4,.4,1) both}
+.cs-badge svg{width:28px;height:28px;color:#fff}
+@keyframes csPop{0%{transform:scale(0)}100%{transform:scale(1)}}
+
+.cs-card h1{margin:10px 0 6px;font-size:20px;font-weight:700;color:var(--cs-navy)}
+.cs-card p{margin:0;font-size:12px;line-height:1.7;color:rgba(var(--cs-navy-rgb),.85)}
+.cs-card p .no{color:var(--cs-orange);font-weight:700}
+
+.cs-btns{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;margin-top:26px}
+.cs-btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 44px;border-radius:2px;font-size:13px;font-weight:600;text-decoration:none;transition:all .2s}
+.cs-btn.outline{background:#fff;border:1px solid var(--cs-navy);color:var(--cs-navy)}
+.cs-btn.outline:hover{background:var(--cs-navy);color:#fff}
+.cs-btn.fill{background:var(--cs-navy);border:1px solid var(--cs-navy);color:#fff}
+.cs-btn.fill:hover{background:var(--cs-orange);border-color:var(--cs-orange);color:#fff}
+
+@media(max-width:575px){
+    .cs-btn{width:100%;padding:0 16px}
+}

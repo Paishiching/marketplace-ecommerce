@@ -1,0 +1,1 @@
+{{-- marketing/shop.blade.php --}}

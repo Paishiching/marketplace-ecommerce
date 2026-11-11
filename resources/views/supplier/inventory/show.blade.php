@@ -1,0 +1,1 @@
+{{-- inventory/shop.blade.php --}}

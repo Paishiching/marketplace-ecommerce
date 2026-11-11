@@ -1,0 +1,256 @@
+/* =====================================================================
+   EB Theme (Electronics-Bangladesh style) - Step 1: Header / Nav / Mobile
+   Load AFTER style.min.css
+   ===================================================================== */
+:root{
+    /* ===== Brand palette (only 3 colors) ===== */
+    --eb-navy:#2a3582;
+    --eb-orange:#fd6801;
+    --eb-white:#ffffff;
+    /* tints = same colors with transparency, no new hues */
+    --eb-navy-rgb:42,53,130;
+    --eb-orange-rgb:253,104,1;
+    --eb-tint:rgba(var(--eb-navy-rgb),.08);
+    --eb-line:rgba(var(--eb-navy-rgb),.15);
+    --eb-bg:rgba(var(--eb-navy-rgb),.06);
+    --eb-radius:10px;
+}
+
+/* FIX: horizontal overflow bondho (clip use kora hoyeche, hidden na, jate sticky header kaj kore) */
+html{scroll-behavior:smooth;max-width:100%;overflow-x:clip}
+body{
+    font-family:'Poppins','Open Sans',sans-serif;
+    background:var(--eb-bg);
+    color:var(--eb-navy);
+    max-width:100%;
+    overflow-x:clip;
+}
+.eb-header a,.eb-mobile-header a,.eb-bottom-nav a,.eb-m-drawer a{text-decoration:none}
+.eb-header ul,.eb-mobile-header ul,.eb-m-drawer ul{list-style:none;margin:0;padding:0}
+
+/* ---------- visibility switch (desktop >= 1200px) ---------- */
+.eb-desktop{display:none}
+.eb-mobile-only{display:block}
+@media (min-width:1200px){
+    .eb-desktop{display:block}
+    .eb-mobile-only{display:none!important}
+}
+
+/* =====================================================================
+   DESKTOP HEADER
+   ===================================================================== */
+.eb-header{position:sticky;top:0;z-index:999;background:#fff;box-shadow:0 2px 10px rgba(var(--eb-navy-rgb),.06)}
+.eb-top{background:var(--eb-orange);padding:14px 0}
+.eb-top-row{display:grid;grid-template-columns:1fr minmax(280px,560px) 1fr;align-items:center;gap:28px}
+
+.eb-logo{flex:0 0 auto;display:inline-flex;align-items:center;color:#fff;font-weight:700;font-size:22px;line-height:1.1}
+.eb-logo img{max-height:46px;width:auto;display:block}
+
+/* search */
+.eb-search{width:100%;display:flex;align-items:stretch;height:46px;background:#fff;border-radius:8px;overflow:hidden;margin:0}
+.eb-search input{flex:1;min-width:0;border:0!important;outline:0!important;box-shadow:none!important;background:transparent!important;padding:0 16px!important;font-size:14px;color:var(--eb-navy);height:100%}
+.eb-search input::placeholder{color:rgba(var(--eb-navy-rgb),.5);opacity:1}
+.eb-search button{flex:0 0 58px;border:0;background:var(--eb-tint);color:var(--eb-navy);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:background .2s}
+.eb-search button:hover{background:var(--eb-line)}
+.eb-search svg{width:22px;height:22px}
+
+/* right actions */
+.eb-actions{justify-self:end;display:flex;align-items:center;gap:22px}
+.eb-act-link{display:inline-flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:600;transition:opacity .2s}
+.eb-act-link:hover{color:#fff;opacity:.85}
+.eb-act-link svg{width:24px;height:24px;flex:0 0 auto}
+
+.eb-circle{position:relative;width:46px;height:46px;border-radius:50%;border:1.5px solid rgba(255,255,255,.85);display:inline-flex;align-items:center;justify-content:center;color:#fff;background:transparent;cursor:pointer;transition:all .2s}
+.eb-circle:hover{background:#fff;color:var(--eb-orange)}
+.eb-circle svg{width:24px;height:24px}
+
+/* count badge - white bg + orange number (orange header er sathe match)
+   driven by data-number (cart JS updates this attribute) */
+.eb-badge-host[data-number]::after{
+    content:attr(data-number);
+    position:absolute;top:-4px;right:-4px;min-width:20px;height:20px;padding:0 5px;
+    border-radius:20px;background:#fff;color:var(--eb-orange);border:1.5px solid var(--eb-orange);
+    font-size:11px;font-weight:700;line-height:17px;text-align:center;
+}
+/* Compare (text link) : badge ta lekhar upor na boshe, ektu dane-upore soriye dao */
+.eb-act-link.eb-badge-host[data-number]::after{top:-10px;right:-16px}
+
+/* user dropdown */
+.eb-user{position:relative}
+.eb-user-menu{position:absolute;right:0;top:calc(100% + 10px);min-width:190px;background:#fff;border-radius:var(--eb-radius);box-shadow:0 12px 30px rgba(var(--eb-navy-rgb),.18);padding:8px 0;opacity:0;visibility:hidden;transform:translateY(8px);transition:all .2s ease;z-index:20}
+.eb-user:hover .eb-user-menu,.eb-user:focus-within .eb-user-menu{opacity:1;visibility:visible;transform:none}
+.eb-user-menu:before{content:"";position:absolute;top:-10px;left:0;right:0;height:10px}
+.eb-user-menu a,.eb-user-menu button{display:block;width:100%;text-align:left;padding:9px 18px;font-size:13px;font-weight:500;color:var(--eb-navy);background:none;border:0;cursor:pointer}
+.eb-user-menu a:hover,.eb-user-menu button:hover{background:var(--eb-tint);color:var(--eb-navy)}
+.eb-user-menu form{margin:0}
+
+/* category nav bar (FIX: flex-wrap:wrap, jate container-er bairey na jay) */
+.eb-nav{background:#fff;border-bottom:1px solid var(--eb-line)}
+.eb-nav-list{display:flex;align-items:center;flex-wrap:wrap;gap:0 2px;max-width:100%}
+.eb-nav-item{position:relative;flex:0 0 auto}
+.eb-nav-item>a{display:flex;align-items:center;gap:6px;padding:11px 12px;font-size:12.5px;font-weight:500;color:var(--eb-navy);white-space:nowrap;transition:color .2s}
+.eb-nav-item>a svg{width:12px;height:12px;transition:transform .2s}
+.eb-nav-item:hover>a{color:var(--eb-orange)}
+.eb-nav-item:hover>a svg{transform:rotate(180deg)}
+.eb-nav-item:first-child>a{padding-left:0}
+
+.eb-drop{position:absolute;left:0;top:100%;min-width:230px;background:#fff;border-radius:0 0 var(--eb-radius) var(--eb-radius);box-shadow:0 14px 30px rgba(var(--eb-navy-rgb),.14);padding:8px 0;opacity:0;visibility:hidden;transform:translateY(6px);transition:all .18s ease;z-index:30;border-top:2px solid var(--eb-navy)}
+.eb-nav-item:hover>.eb-drop{opacity:1;visibility:visible;transform:none}
+.eb-drop a{display:block;padding:8px 18px;font-size:13px;color:var(--eb-navy);transition:all .15s}
+.eb-drop a:hover{background:var(--eb-tint);color:var(--eb-navy);padding-left:22px}
+.eb-nav-item:nth-last-child(-n+2) .eb-drop{left:auto;right:0}
+
+/* =====================================================================
+   MOBILE HEADER
+   ===================================================================== */
+.eb-mobile-header{position:sticky;top:0;z-index:999;background:var(--eb-orange);padding:12px 0 14px;box-shadow:0 2px 8px rgba(var(--eb-orange-rgb),.25)}
+.eb-mh-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.eb-burger{width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;color:#fff;background:none;border:0;padding:0}
+.eb-burger svg{width:28px;height:28px}
+.eb-mh-logo{display:inline-flex;align-items:center;color:#fff;font-weight:700;font-size:18px}
+.eb-mh-logo img{max-height:38px;width:auto;display:block}
+.eb-mh-cart{margin-left:auto;width:42px;height:42px}
+.eb-mh-cart svg{width:22px;height:22px}
+.eb-mobile-header .eb-search{max-width:none;height:44px}
+
+/* =====================================================================
+   CATEGORY DRAWER (Flipkart style : left tabs + right image grid)
+   ===================================================================== */
+/* theme er padding / margin / scrollbar sob muche drawer ke edge-to-edge kora */
+#offcanvas-mobile-menu{width:100%!important;max-width:100%!important;padding:0!important;margin:0!important;border:0!important;overflow:hidden!important;background:#fff}
+#offcanvas-mobile-menu .inner{padding:0!important;margin:0!important;width:100%!important;max-width:none!important;height:100%!important;max-height:none!important;overflow:hidden!important;background:#fff}
+.eb-m-drawer{display:flex;flex-direction:column;height:100%}
+.eb-m-drawer>*{margin-left:0;margin-right:0}
+
+/* top bar : back arrow + title + search + cart (Flipkart style) */
+.eb-m-head{flex:0 0 auto;display:flex;align-items:center;gap:6px;background:#fff;color:var(--eb-navy);padding:12px 14px;border-bottom:0}
+.eb-m-title{flex:1;font-size:18px;font-weight:400;color:var(--eb-navy);margin-left:8px}
+.eb-m-head .eb-m-close,.eb-m-head .eb-m-act{width:38px;height:38px;border-radius:50%;border:0;background:transparent;color:var(--eb-navy);display:inline-flex;align-items:center;justify-content:center;padding:0;margin:0;cursor:pointer;position:static;text-decoration:none}
+.eb-m-head .eb-m-close:hover,.eb-m-head .eb-m-act:hover{background:var(--eb-tint);color:var(--eb-orange)}
+.eb-m-head svg{width:22px;height:22px}
+/* theme er nijer X lukiye dao, nahole 2ta X dekhay */
+.eb-m-close::before,.eb-m-close::after{content:none!important;display:none!important}
+.eb-m-close{background-image:none!important;box-shadow:none!important;font-size:0}
+
+.eb-cat-wrap{flex:1;min-height:0;display:grid;grid-template-columns:90px minmax(0,1fr)}
+
+/* left rail */
+.eb-cat-side{list-style:none;margin:0;padding:0 0 16px;overflow-y:auto;overflow-x:hidden;background:var(--eb-bg);height:100%;scrollbar-width:none;-ms-overflow-style:none}
+.eb-cat-side::-webkit-scrollbar,.eb-cat-main::-webkit-scrollbar{display:none;width:0;height:0}
+.eb-cat-side li{margin:0}
+.eb-cat-tab{position:relative;width:100%;display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 4px 14px;border:0;background:transparent;color:rgba(var(--eb-navy-rgb),.6);font-size:11.5px;font-weight:500;line-height:1.25;text-align:center;cursor:pointer}
+.eb-cat-tab:after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:1px;background:var(--eb-line)}
+.eb-cat-tab img{width:52px;height:52px;border-radius:12px;object-fit:contain;background:transparent}
+.eb-cat-tab.active{background:#fff;color:var(--eb-orange);font-weight:600}
+.eb-cat-tab.active:after{display:none}
+.eb-cat-tab.active:before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:4px;background:var(--eb-orange);border-radius:0 4px 4px 0}
+
+/* letter fallback (image na thakle) */
+.eb-cat-letter{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:12px;background:#fff;color:var(--eb-navy);font-style:normal;font-size:20px;font-weight:700}
+
+/* right panel */
+.eb-cat-main{overflow-y:auto;overflow-x:hidden;padding:16px 12px 24px;height:100%;background:#fff;border-left:1px solid var(--eb-line);scrollbar-width:none;-ms-overflow-style:none}
+.eb-cat-panel{display:none}
+.eb-cat-panel.active{display:block}
+.eb-cat-heading{margin:0 0 14px;font-size:17px;font-weight:600;color:var(--eb-navy)}
+.eb-cat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 10px}
+.eb-cat-tile{display:flex;flex-direction:column;align-items:center;gap:8px;text-decoration:none;color:var(--eb-navy)}
+.eb-cat-ico{width:100%;aspect-ratio:1/1;border-radius:22px;background:var(--eb-tint);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.eb-cat-ico img{width:100%;height:100%;object-fit:contain;padding:10px}
+.eb-cat-ico .eb-cat-letter{width:100%;height:100%;border-radius:0;background:transparent;font-size:28px}
+.eb-cat-tile em{font-style:normal;font-size:12px;font-weight:500;line-height:1.3;text-align:center;color:var(--eb-navy);word-break:break-word}
+.eb-cat-tile:hover em{color:var(--eb-orange)}
+
+/* mobile e bottom nav drawer er niche-o dekha jabe (Flipkart er moto) */
+@media (max-width:1199px){
+    #offcanvas-mobile-menu{top:0!important;bottom:62px!important;height:auto!important}
+    .eb-bottom-nav{z-index:99990}
+    /* drawer khola thakle bottom nav grey na hoy (Flipkart er moto) */
+    body:has(#offcanvas-mobile-menu.offcanvas-open) .offcanvas-overlay,
+    body:has(#offcanvas-mobile-menu.active) .offcanvas-overlay,
+    body:has(#offcanvas-mobile-menu.show) .offcanvas-overlay,
+    body:has(#offcanvas-mobile-menu.is-open) .offcanvas-overlay{display:none!important}
+}
+
+/* =====================================================================
+   MOBILE BOTTOM NAV
+   ===================================================================== */
+.eb-bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:998;height:62px;background:#fff;border-top:1px solid var(--eb-line);box-shadow:0 -4px 14px rgba(var(--eb-navy-rgb),.08);display:grid;grid-template-columns:repeat(5,1fr);align-items:center}
+.eb-bn-item{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:rgba(var(--eb-navy-rgb),.65);font-size:11.5px;font-weight:500;height:100%;background:none;border:0;padding:0}
+.eb-bn-item svg{width:24px;height:24px}
+.eb-bn-item.active,.eb-bn-item:hover{color:var(--eb-orange)}
+.eb-bn-hot{position:relative;display:flex;justify-content:center;height:100%}
+.eb-bn-hot a{position:absolute;top:-22px;width:62px;height:62px;border-radius:50%;background:#fff;box-shadow:0 -3px 10px rgba(var(--eb-navy-rgb),.12);display:flex;align-items:center;justify-content:center}
+.eb-bn-hot span{width:50px;height:50px;border-radius:50%;background:var(--eb-orange);color:#fff;font-size:8.5px;font-weight:800;line-height:1.05;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;letter-spacing:.2px}
+.eb-bn-hot span svg{width:20px;height:20px;margin-bottom:1px}
+
+@media (max-width:1199px){
+    body{padding-bottom:70px}
+}
+
+/* =====================================================================
+   TOAST NOTIFICATION (bottom-right, light green "Added to cart" style)
+   JS : showToast() in layouts/frontend/app.blade.php
+   Rong bodlate chaile shudhu ei 6ta variable bodlan.
+   ===================================================================== */
+:root{
+    --toast-ok-bg:#e8f5ef;
+    --toast-ok-border:#bfe3d3;
+    --toast-ok-text:#006b4f;
+    --toast-err-bg:#fdecea;
+    --toast-err-border:#f5c2bd;
+    --toast-err-text:#c62828;
+}
+
+#toastContainer{
+    position:fixed;
+    right:20px;
+    bottom:24px;
+    z-index:99999;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    align-items:flex-end;
+    pointer-events:none;
+}
+.app-toast{
+    pointer-events:auto;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:210px;
+    max-width:360px;
+    padding:12px 16px;
+    background:var(--toast-ok-bg);
+    border:1px solid var(--toast-ok-border);
+    border-radius:10px;
+    box-shadow:0 6px 18px rgba(0,107,79,.18);
+    color:var(--toast-ok-text);
+    font-family:'Poppins','Open Sans',sans-serif;
+    transform:translateY(20px);
+    opacity:0;
+    transition:transform .3s ease,opacity .3s ease;
+}
+.app-toast.show{transform:translateY(0);opacity:1}
+.app-toast-icon{flex:0 0 22px;width:22px;height:22px}
+.app-toast-body{flex:1;min-width:0}
+.app-toast-title{font-size:14px;font-weight:600;line-height:1.35}
+.app-toast-message{font-size:12px;line-height:1.4;margin-top:2px;opacity:.85}
+.app-toast-close{flex:0 0 auto;background:none;border:0;padding:0 0 0 4px;font-size:18px;line-height:1;color:inherit;opacity:.55;cursor:pointer}
+.app-toast-close:hover{opacity:1}
+
+.app-toast.toast-error{
+    background:var(--toast-err-bg);
+    border-color:var(--toast-err-border);
+    color:var(--toast-err-text);
+    box-shadow:0 6px 18px rgba(198,40,40,.15);
+}
+
+@media (max-width:767px){
+    #toastContainer{left:12px;right:12px;bottom:76px;align-items:stretch}
+    .app-toast{min-width:0;max-width:100%}
+}
+@media (max-width:1199px){
+    /* product page e fixed Add To Cart bar thakle toast tar upore thake */
+    body:has(.pd-sticky) #toastContainer{bottom:84px}
+}

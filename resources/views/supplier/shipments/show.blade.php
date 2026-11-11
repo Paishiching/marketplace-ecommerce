@@ -1,0 +1,1 @@
+{{-- shipments/shop.blade.php --}}

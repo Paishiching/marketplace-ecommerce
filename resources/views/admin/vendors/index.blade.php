@@ -1,0 +1,1 @@
+{{-- vendors/index.blade.php --}}

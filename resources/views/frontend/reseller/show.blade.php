@@ -1,0 +1,1 @@
+{{-- reseller/shop.blade.php --}}

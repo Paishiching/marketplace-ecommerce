@@ -1,0 +1,1 @@
+{{-- customer/footer.blade.php --}}

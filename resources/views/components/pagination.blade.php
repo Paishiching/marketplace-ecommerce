@@ -1,0 +1,1 @@
+{{-- components/pagination.blade.php --}}

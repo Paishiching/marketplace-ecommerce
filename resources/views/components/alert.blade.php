@@ -1,0 +1,1 @@
+{{-- components/alert.blade.php --}}

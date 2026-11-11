@@ -1,0 +1,1 @@
+{{-- verification/shop.blade.php --}}
