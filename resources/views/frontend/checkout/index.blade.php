@@ -3,7 +3,7 @@
 @section('title', 'Checkout')
 @section('content')
 
-    <link rel="stylesheet" href="{{ asset('/') }}frontend/assets/css/eb-checkout.css?v=8">
+    <link rel="stylesheet" href="{{ asset('/') }}frontend/assets/css/eb-checkout.css?v=9">
 
     <div class="ck-page">
         <div class="container">
@@ -33,12 +33,17 @@
                     $paymentMethods = [
                         ['value' => 'cod',        'label' => 'Cash on Delivery', 'sub' => false,
                          'icon' => '<rect x="3" y="7" width="18" height="11" rx="2"/><circle cx="12" cy="12.5" r="2.5"/>'],
+                        ['value' => 'bkash',     'label' => 'bKash', 'sub' => true,
+                         'icon' => '<path d="M4 5h3v14H4zM10 7h3v10h-3zM16 9h3v6h-3z"/>'],
+                        ['value' => 'nagad',     'label' => 'Nagad', 'sub' => true,
+                         'icon' => '<path d="M12 3l8 4v10l-8 4-8-4V7z"/><path d="M8 12h8M12 8v8"/>'],
                         ['value' => 'sslcommerz', 'label' => 'Online payment (SSL Commerz)', 'sub' => false,
                          'icon' => '<path d="M12 3l8 3v5c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-3z"/><path d="M9 12l2 2 4-4"/>'],
                         ['value' => 'bank_deposit', 'label' => 'Bank deposit', 'sub' => true,
                          'icon' => '<path d="M3 9l9-6 9 6M5 10v8m5-8v8m4-8v8m5-8v8M3 21h18M2 18h20"/>'],
                     ];
                     $oldPm = old('payment_method', 'cod');
+                    $bankOptions = config('bangladesh_banks.scheduled_banks', []);
 
                     $emiSite = optional($site ?? null)->site_name ?: 'Buydor';
                 @endphp
@@ -240,16 +245,33 @@
                                                 <div class="ck-deposit-note">Enter the deposit details and attach your receipt. We will verify the payment before confirming your order.</div>
                                                 <div class="ck-deposit-grid">
                                                     <label class="ck-deposit-field">Deposit date <span>*</span><input type="date" name="deposit_date" max="{{ now()->toDateString() }}" value="{{ old('deposit_date') }}">@error('deposit_date')<small>{{ $message }}</small>@enderror</label>
-                                                    <label class="ck-deposit-field">Depositor bank <span>*</span><input type="text" name="depositor_bank" maxlength="150" value="{{ old('depositor_bank') }}" placeholder="Your bank name">@error('depositor_bank')<small>{{ $message }}</small>@enderror</label>
+                                                    <label class="ck-deposit-field">Depositor bank <span>*</span><select name="depositor_bank"><option value="">Select your bank</option>@foreach($bankOptions as $bank)<option value="{{ $bank }}" @selected(old('depositor_bank') === $bank)>{{ $bank }}</option>@endforeach</select>@error('depositor_bank')<small>{{ $message }}</small>@enderror</label>
                                                     <label class="ck-deposit-field">Branch <span>*</span><input type="text" name="depositor_branch" maxlength="150" value="{{ old('depositor_branch') }}" placeholder="Branch name">@error('depositor_branch')<small>{{ $message }}</small>@enderror</label>
                                                     <label class="ck-deposit-field">Deposit type <span>*</span><select name="deposit_type"><option value="">Select type</option>@foreach(['cash' => 'Cash', 'cheque' => 'Cheque', 'bank_transfer' => 'Bank transfer'] as $value => $label)<option value="{{ $value }}" @selected(old('deposit_type') === $value)>{{ $label }}</option>@endforeach</select>@error('deposit_type')<small>{{ $message }}</small>@enderror</label>
                                                     <label class="ck-deposit-field">Deposit amount (BDT) <span>*</span><input type="number" name="deposit_amount" min="1" max="999999999" step="0.01" inputmode="decimal" value="{{ old('deposit_amount') }}" placeholder="Enter amount">@error('deposit_amount')<small>{{ $message }}</small>@enderror</label>
                                                     <label class="ck-deposit-field">Company receiving account <span>*</span><input type="text" name="deposit_company_account" maxlength="190" value="{{ old('deposit_company_account') }}" placeholder="Account name or number you paid to">@error('deposit_company_account')<small>{{ $message }}</small>@enderror</label>
-                                                    <label class="ck-deposit-field">Receiving bank name <span>*</span><input type="text" name="deposit_bank_name" maxlength="150" value="{{ old('deposit_bank_name') }}" placeholder="Company bank name">@error('deposit_bank_name')<small>{{ $message }}</small>@enderror</label>
+                                                    <label class="ck-deposit-field">Receiving bank name <span>*</span><select name="deposit_bank_name"><option value="">Select receiving bank</option>@foreach($bankOptions as $bank)<option value="{{ $bank }}" @selected(old('deposit_bank_name') === $bank)>{{ $bank }}</option>@endforeach</select>@error('deposit_bank_name')<small>{{ $message }}</small>@enderror</label>
                                                     <label class="ck-deposit-field">Company name <span>*</span><input type="text" name="deposit_company_name" maxlength="150" value="{{ old('deposit_company_name') }}" placeholder="Depositing company name">@error('deposit_company_name')<small>{{ $message }}</small>@enderror</label>
-                                                    <label class="ck-deposit-field">Receipt ID <small>(optional)</small><input type="text" name="deposit_receipt_id" maxlength="190" value="{{ old('deposit_receipt_id') }}" placeholder="Transaction or receipt number">@error('deposit_receipt_id')<small>{{ $message }}</small>@enderror</label>
+                                                    <label class="ck-deposit-field">Transfer / deposit ID <span>*</span><input type="text" name="deposit_receipt_id" maxlength="190" value="{{ old('deposit_receipt_id') }}" placeholder="Transaction or deposit slip ID">@error('deposit_receipt_id')<small>{{ $message }}</small>@enderror</label>
                                                     <label class="ck-deposit-field ck-deposit-upload">Deposit receipt <span>*</span><input type="file" name="deposit_attachment" accept="image/jpeg,image/png,image/webp,application/pdf"> <small>JPG, PNG, WebP or PDF · up to 5 MB</small>@error('deposit_attachment')<small class="ck-deposit-error">{{ $message }}</small>@enderror</label>
                                                     <label class="ck-deposit-field ck-deposit-remark">Remark <small>(optional)</small><textarea name="deposit_remark" maxlength="1000" rows="3" placeholder="Add any deposit details">{{ old('deposit_remark') }}</textarea>@error('deposit_remark')<small>{{ $message }}</small>@enderror</label>
+                                                </div>
+                                            </div>
+                                        @endif
+                                        @if(in_array($pm['value'], ['bkash', 'nagad'], true))
+                                            <div class="ck-pm-sub">
+                                                @php($mobilePayNumber = config($pm['value'] === 'bkash' ? 'payment.bkash_number' : 'payment.nagad_number'))
+                                                <div class="ck-deposit-note">
+                                                    @if($mobilePayNumber)
+                                                        Send BDT {{ number_format($grandTotal, 2) }} to {{ $mobilePayNumber }}. Your payment will remain pending until the store verifies it.
+                                                    @else
+                                                        The store has not configured a {{ ucfirst($pm['value']) }} receiving number yet. Please contact the store before sending payment. Your payment will remain pending until verified.
+                                                    @endif
+                                                </div>
+                                                <div class="ck-deposit-grid">
+                                                    <label class="ck-deposit-field">Amount sent (BDT) <span>*</span><input type="number" name="payment_sent_amount" min="1" max="999999999" step="0.01" inputmode="decimal" value="{{ old('payment_sent_amount', number_format($grandTotal, 2, '.', '')) }}" placeholder="Enter amount sent">@error('payment_sent_amount')<small>{{ $message }}</small>@enderror</label>
+                                                    <label class="ck-deposit-field">Your {{ ucfirst($pm['value']) }} number <span>*</span><input type="tel" name="payment_sender_account" maxlength="20" value="{{ old('payment_sender_account') }}" placeholder="01XXXXXXXXX">@error('payment_sender_account')<small>{{ $message }}</small>@enderror</label>
+                                                    <label class="ck-deposit-field">Transaction ID <span>*</span><input type="text" name="payment_transaction_ref" maxlength="190" value="{{ old('payment_transaction_ref') }}" placeholder="Enter transaction ID">@error('payment_transaction_ref')<small>{{ $message }}</small>@enderror</label>
                                                 </div>
                                             </div>
                                         @endif
@@ -643,8 +665,13 @@
                                 box.innerHTML = '<p class="ck-note">No delivery methods available.</p>';
                                 return;
                             }
-                            box.innerHTML = '<div class="ck-ship"><span>Standard Delivery<small>' + esc(city) + '</small></span><b>' +
-                                (cost === 0 ? 'Free' : money(cost)) + '</b></div>';
+                            var insideDhaka = String(city || '').trim().toLowerCase() === 'dhaka';
+                            var deliveryArea = insideDhaka ? 'Inside Dhaka' : 'Outside Dhaka';
+                            var estimate = insideDhaka ? 'Estimated delivery: 24 to 48 hours' : 'Delivery time depends on location';
+                            box.innerHTML = '<label class="ck-ship-option"><input type="radio" name="delivery_method" value="regular" checked>' +
+                                '<span class="ck-ship"><span class="ck-ship-copy"><strong>Regular Delivery <em>— ' + deliveryArea + '</em></strong>' +
+                                '<small>Home delivery · ' + estimate + '</small><small>' + esc(city) + '</small></span><b>' +
+                                (cost === 0 ? 'Free' : money(cost)) + '</b></span></label>';
                         }
                         function updateGrandTotal(shippingCost) {
                             currentShippingCost = shippingCost;
@@ -1086,9 +1113,24 @@
                                 return;
                             }
                             if (pm.value === 'bank_deposit') {
-                                var depositFields=['deposit_date','depositor_bank','depositor_branch','deposit_type','deposit_amount','deposit_company_account','deposit_bank_name','deposit_company_name','deposit_attachment'];
+                                var depositFields=['deposit_date','depositor_bank','depositor_branch','deposit_type','deposit_amount','deposit_company_account','deposit_bank_name','deposit_company_name','deposit_receipt_id','deposit_attachment'];
                                 var missingDepositField=depositFields.find(function(name){var field=document.querySelector('[name="'+name+'"]');return !field || !field.value;});
                                 if(missingDepositField){e.preventDefault();var firstMissing=document.querySelector('[name="'+missingDepositField+'"]');firstMissing?.focus();toast('Deposit details','Please complete all required deposit fields and attach your receipt.','error');return;}
+                            }
+                            if (pm.value === 'bkash' || pm.value === 'nagad') {
+                                var sentAmount = document.querySelector('[name="payment_sent_amount"]');
+                                var senderAccount = document.querySelector('[name="payment_sender_account"]');
+                                var transactionRef = document.querySelector('[name="payment_transaction_ref"]');
+                                var bdMobile = /^(\+?880|0)1[3-9]\d{8}$/;
+                                if (!sentAmount.value || parseFloat(sentAmount.value) <= 0) {
+                                    e.preventDefault(); sentAmount.focus(); toast('Mobile payment', 'Enter the amount you sent.', 'error'); return;
+                                }
+                                if (!senderAccount.value || !bdMobile.test(senderAccount.value.trim())) {
+                                    e.preventDefault(); senderAccount.focus(); toast('Mobile payment', 'Enter a valid Bangladeshi mobile banking number.', 'error'); return;
+                                }
+                                if (!transactionRef.value.trim()) {
+                                    e.preventDefault(); transactionRef.focus(); toast('Mobile payment', 'Enter the payment transaction ID.', 'error'); return;
+                                }
                             }
                             if (!document.getElementById('agreeTerms').checked) {
                                 e.preventDefault();

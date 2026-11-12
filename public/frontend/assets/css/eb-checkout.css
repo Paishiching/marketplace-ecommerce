@@ -131,9 +131,15 @@
 
 /* ---------- Delivery ---------- */
 .ck-note{text-align:center;color:rgba(var(--ck-navy-rgb),.75);font-size:15px;padding:6px 0}
-.ck-ship{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1.5px solid var(--ck-navy);border-radius:8px;background:var(--ck-tint);font-size:14px;font-weight:600}
-.ck-ship small{display:block;font-weight:400;color:rgba(var(--ck-navy-rgb),.75)}
-.ck-ship b{color:var(--ck-orange);font-size:15px}
+.ck-ship-option{display:block;cursor:pointer;margin:0}
+.ck-ship-option>input{position:absolute;opacity:0;pointer-events:none}
+.ck-ship{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px;border:1.5px solid var(--ck-line);border-radius:10px;background:#fff;font-size:14px;font-weight:600;transition:border-color .18s,background .18s,box-shadow .18s}
+.ck-ship-option>input:checked+.ck-ship{border-color:var(--ck-green,var(--ck-navy));background:#f4fbf8;box-shadow:0 0 0 1px var(--ck-green,var(--ck-navy))}
+.ck-ship-copy{min-width:0;display:block}
+.ck-ship-copy strong{display:block;color:var(--ck-navy);font-size:15px}
+.ck-ship-copy em{font-style:normal;font-weight:500}
+.ck-ship small{display:block;margin-top:4px;font-weight:400;color:rgba(var(--ck-navy-rgb),.75)}
+.ck-ship b{color:var(--ck-green,var(--ck-orange));font-size:15px;white-space:nowrap}
 
 /* ---------- Step 2 : Payment methods ---------- */
 .ck-pm{position:relative;margin-bottom:12px;border:1px solid var(--ck-line);border-radius:10px;background:#fff;overflow:hidden;transition:all .2s}

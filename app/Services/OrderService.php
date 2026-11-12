@@ -157,6 +157,9 @@ class OrderService
                 'order_id'          => $order->id,
                 'payment_method_id' => $paymentMethod->id ?? null,
                 'payment_method_code' => $data['payment_method'],
+                'payer_account' => $data['payment_sender_account'] ?? null,
+                'submitted_amount' => $data['payment_sent_amount'] ?? $data['deposit_amount'] ?? null,
+                'transaction_ref' => $data['payment_transaction_ref'] ?? $data['deposit_receipt_id'] ?? null,
                 'amount'            => $grandTotal,
                 'status'            => 'pending',
             ]);

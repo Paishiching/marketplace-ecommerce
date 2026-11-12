@@ -9,7 +9,6 @@
         </div>
         <a href="{{ route('customer.new-order.create') }}" class="dsh-btn">New Order</a>
         <a href="{{ route('homes') }}" class="dsh-btn">Continue Shopping</a>
-        <a href="{{ route('customer.rfqs.create') }}" class="dsh-btn">Request supplier quotes</a>
     </div>
 
     <div class="dsh-stats">
@@ -26,6 +25,25 @@
             <div><small>Total Spent</small><b>Tk. {{ number_format($stats['spent'], 2) }}</b></div>
         </div>
     </div>
+
+    <div class="dsh-card mt-3">
+        <div class="dsh-card-head">
+            <h3>My supplier quote requests</h3>
+            <a href="{{ route('customer.rfqs.index') }}">View all</a>
+        </div>
+        @forelse($recentRfqs as $rfq)
+            <a class="rfq-dashboard-row" href="{{ route('customer.rfqs.show', $rfq) }}">
+                <span><strong>{{ $rfq->product_name }}</strong><small>{{ number_format($rfq->quantity) }} {{ $rfq->unit }} · {{ $rfq->created_at->format('d M Y') }}</small></span>
+                <span class="dsh-badge">{{ $rfq->quotes_count }} {{ \Illuminate\Support\Str::plural('quote', $rfq->quotes_count) }}</span>
+            </a>
+        @empty
+            <div class="rfq-dashboard-empty">
+                <p>You have not requested supplier quotes yet.</p>
+                <a class="dsh-btn" href="{{ route('customer.rfqs.create') }}">Request supplier quotes</a>
+            </div>
+        @endforelse
+    </div>
+    <style>.rfq-dashboard-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 22px;border-bottom:1px solid #edf0f5;color:#24324a;text-decoration:none;min-width:0}.rfq-dashboard-row>span:first-child{min-width:0}.rfq-dashboard-row strong,.rfq-dashboard-row small{display:block;overflow-wrap:anywhere}.rfq-dashboard-row small{color:#667085;margin-top:5px}.rfq-dashboard-empty{padding:18px 22px}.rfq-dashboard-empty p{color:#667085;margin:0 0 12px}</style>
 
     @if($shipments->isNotEmpty())
         <div class="dsh-card mt-3">

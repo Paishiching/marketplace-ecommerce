@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Checkout;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class PlaceOrderRequest extends FormRequest
 {
@@ -27,17 +28,20 @@ class PlaceOrderRequest extends FormRequest
             'city'          => ['required_without:shipping_address_id', 'nullable', 'string', 'max:100'],
             'postal_code'   => ['nullable', 'string', 'max:20'],
 
-            'payment_method' => ['required', 'in:cod,sslcommerz,bank_deposit'],
+            'payment_method' => ['required', 'in:cod,bkash,nagad,sslcommerz,bank_deposit'],
+            'payment_sent_amount' => ['required_if:payment_method,bkash,nagad', 'nullable', 'numeric', 'min:1', 'max:999999999'],
+            'payment_sender_account' => ['required_if:payment_method,bkash,nagad', 'nullable', 'string', 'regex:/^(\+?880|0)1[3-9]\d{8}$/'],
+            'payment_transaction_ref' => ['required_if:payment_method,bkash,nagad', 'nullable', 'string', 'max:190'],
             'coupon_code' => ['nullable', 'string', 'max:50'],
             'deposit_date' => ['required_if:payment_method,bank_deposit', 'nullable', 'date', 'before_or_equal:today'],
-            'depositor_bank' => ['required_if:payment_method,bank_deposit', 'nullable', 'string', 'max:150'],
+            'depositor_bank' => ['required_if:payment_method,bank_deposit', 'nullable', Rule::in(config('bangladesh_banks.scheduled_banks'))],
             'depositor_branch' => ['required_if:payment_method,bank_deposit', 'nullable', 'string', 'max:150'],
             'deposit_type' => ['required_if:payment_method,bank_deposit', 'nullable', 'in:cash,cheque,bank_transfer'],
             'deposit_amount' => ['required_if:payment_method,bank_deposit', 'nullable', 'numeric', 'min:1', 'max:999999999'],
             'deposit_company_account' => ['required_if:payment_method,bank_deposit', 'nullable', 'string', 'max:190'],
-            'deposit_bank_name' => ['required_if:payment_method,bank_deposit', 'nullable', 'string', 'max:150'],
+            'deposit_bank_name' => ['required_if:payment_method,bank_deposit', 'nullable', Rule::in(config('bangladesh_banks.scheduled_banks'))],
             'deposit_company_name' => ['required_if:payment_method,bank_deposit', 'nullable', 'string', 'max:150'],
-            'deposit_receipt_id' => ['nullable', 'string', 'max:190'],
+            'deposit_receipt_id' => ['required_if:payment_method,bank_deposit', 'nullable', 'string', 'max:190'],
             'deposit_attachment' => ['required_if:payment_method,bank_deposit', 'nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:5120'],
             'deposit_remark' => ['nullable', 'string', 'max:1000'],
             'notes'          => ['nullable', 'string', 'max:1000'],
@@ -56,6 +60,7 @@ class PlaceOrderRequest extends FormRequest
 
             'payment_method.required' => 'Please select a payment method.',
             'payment_method.in'       => 'Please select a valid payment method.',
+            'payment_sender_account.regex' => 'Please enter a valid Bangladeshi mobile banking number.',
         ];
     }
 }

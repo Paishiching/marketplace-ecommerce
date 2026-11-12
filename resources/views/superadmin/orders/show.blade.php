@@ -114,7 +114,7 @@
                                 <div class="d-flex justify-content-between border-bottom py-2">
                                     <div>
                                         {{ \Illuminate\Support\Str::headline($payment->paymentMethod?->name ?? $payment->payment_method_code ?? $payment->payment_method ?? $payment->method ?? 'Payment') }}
-                                        <div class="text-muted small">{{ $payment->transaction_id ?? '' }} {{ $payment->created_at?->format('M d, Y h:i A') }}</div>
+                                        <div class="text-muted small">{{ $payment->payer_account ? 'Sender: '.$payment->payer_account.' · ' : '' }}{{ ($payment->transaction_ref ?? $payment->transaction_id) ? 'Transfer / transaction ID: '.($payment->transaction_ref ?? $payment->transaction_id).' · ' : '' }}{{ $payment->submitted_amount !== null ? 'Submitted amount: BDT '.number_format($payment->submitted_amount, 2).' · ' : '' }}{{ $payment->created_at?->format('M d, Y h:i A') }}</div>
                                     </div>
                                     <div class="text-end">
                                         Tk. {{ number_format($payment->amount ?? 0, 2) }}

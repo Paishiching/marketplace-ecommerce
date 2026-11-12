@@ -51,9 +51,9 @@
         </div>
     @endif
 
-    <a href="{{ route('wishlist.index') }}" class="eb-bn-item {{ request()->routeIs('wishlist.*') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-8-5.2-8-11a4.8 4.8 0 0 1 8-3.5A4.8 4.8 0 0 1 20 10c0 5.8-8 11-8 11z"/></svg>
-        Wishlist
+    <a href="{{ route('customer.rfqs.create') }}" class="eb-bn-item {{ request()->routeIs('customer.rfqs.*') ? 'active' : '' }}" aria-label="Request supplier quotes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h10a2 2 0 0 1 2 2v14l-3-2-4 2-4-2-3 2V5a2 2 0 0 1 2-2Z"/><path d="M9 8h6M9 12h6"/></svg>
+        Quotes
     </a>
 
     @auth

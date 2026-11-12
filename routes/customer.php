@@ -14,12 +14,16 @@ use App\Http\Controllers\Customer\NewOrderController;
 | Notun customer feature (return, refund, review...) ekhane add korben.
 |--------------------------------------------------------------------------
 */
+Route::get('/account/rfqs/create', [RfqController::class, 'create'])
+    ->middleware(\App\Http\Middleware\RequireOtpLoginForRfq::class)
+    ->name('customer.rfqs.create');
+
 Route::middleware('auth')->group(function () {
     Route::get('/customer/dashboard', [AccountController::class, 'dashboard'])->name('customer.dashboard');
     Route::get('/account/new-order/search-products', [NewOrderController::class, 'searchProducts'])->name('customer.new-order.search-products');
     Route::get('/account/new-order', [NewOrderController::class, 'create'])->name('customer.new-order.create');
     Route::post('/account/new-order', [NewOrderController::class, 'store'])->name('customer.new-order.store');
-    Route::resource('/account/rfqs', RfqController::class)->only(['index', 'create', 'store', 'show'])->names('customer.rfqs');
+    Route::resource('/account/rfqs', RfqController::class)->only(['index', 'store', 'show'])->names('customer.rfqs');
     Route::post('/account/rfqs/draft', [RfqController::class, 'draft'])->middleware('throttle:8,1')->name('customer.rfqs.draft');
 
     Route::get('/account/orders', [AccountController::class, 'orders'])->name('account.orders');

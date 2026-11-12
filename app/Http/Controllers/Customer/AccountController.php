@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Customer;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Order;
+use App\Models\Rfq;
 use App\Models\Shipment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -32,10 +33,11 @@ class AccountController extends Controller
         ];
 
         $orders = (clone $base)->with(['orderItems', 'shipments'])->latest()->take(5)->get();
+        $recentRfqs = Rfq::where('user_id', Auth::id())->withCount('quotes')->latest()->take(3)->get();
         $shipments = Shipment::whereHas('order', fn ($query) => $query->where('customer_id', $customer->id))
             ->with('order')->latest()->paginate(10, ['*'], 'deliveries_page');
 
-        return view('customer.account.dashboard', compact('stats', 'orders', 'shipments'));
+        return view('customer.account.dashboard', compact('stats', 'orders', 'shipments', 'recentRfqs'));
     }
 
     public function updateShipmentRemark(Request $request, Shipment $shipment)
