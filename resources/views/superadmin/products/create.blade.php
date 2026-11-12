@@ -84,6 +84,16 @@
                                                placeholder="e.g. PROD-0001" value="{{ old('sku') }}">
                                         @error('sku') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                                     </div>
+                                    <div class="col-md-6">
+                                        <label for="model_number" class="form-label">Model number <span class="text-muted fw-normal">(optional)</span></label>
+                                        <input type="text" name="model_number" class="form-control @error('model_number') is-invalid @enderror" id="model_number" maxlength="150" placeholder="e.g. QA55Q60D" value="{{ old('model_number') }}">
+                                        @error('model_number') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="warranty" class="form-label">Warranty</label>
+                                        <input type="text" name="warranty" class="form-control @error('warranty') is-invalid @enderror" id="warranty" maxlength="190" placeholder="e.g. 3 years replacement warranty" value="{{ old('warranty') }}">
+                                        @error('warranty') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                                    </div>
                                 </div>
 
                                 <div class="mb-3 mt-3">
@@ -317,6 +327,22 @@
                             </div>
                         </div>
                         <!-- /Specifications -->
+
+                        <div class="card border-0 shadow-sm" id="emiPlanCard">
+                            <div class="card-body p-4">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                    <div><h5 class="card-title mb-1">EMI plans</h5><p class="text-muted small mb-0">Add the bank, installment period, and issuer fee customers should see under View Plans.</p></div>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="addEmiPlan"><i class="bx bx-plus"></i> Add plan</button>
+                                </div>
+                                @error('emi_plans') <div class="text-danger small mt-2">{{ $message }}</div> @enderror
+                                <div class="table-responsive mt-3"><table class="table table-sm align-middle mb-0"><thead class="table-light"><tr><th>Bank</th><th style="width:130px">Months</th><th style="width:150px">Fee (%)</th><th style="width:90px">Active</th><th style="width:70px"></th></tr></thead><tbody id="emiPlanRows">
+                                    @foreach(old('emi_plans', []) as $i => $plan)
+                                        <tr class="emi-plan-row"><td><input class="form-control form-control-sm" name="emi_plans[{{ $i }}][bank_name]" value="{{ $plan['bank_name'] ?? '' }}" maxlength="150" placeholder="Bank name" required></td><td><input class="form-control form-control-sm" type="number" name="emi_plans[{{ $i }}][tenure_months]" value="{{ $plan['tenure_months'] ?? '' }}" min="1" max="120" placeholder="6" required></td><td><input class="form-control form-control-sm" type="number" name="emi_plans[{{ $i }}][fee_percentage]" value="{{ $plan['fee_percentage'] ?? 0 }}" min="0" max="100" step="0.01" placeholder="0" required></td><td><input type="hidden" name="emi_plans[{{ $i }}][is_active]" value="0"><input class="form-check-input" type="checkbox" name="emi_plans[{{ $i }}][is_active]" value="1" @checked($plan['is_active'] ?? true)></td><td><button type="button" class="btn btn-outline-danger btn-sm remove-emi-plan" aria-label="Remove plan"><i class="bx bx-trash"></i></button></td></tr>
+                                    @endforeach
+                                </tbody></table></div>
+                                <p class="text-muted small mt-2 mb-0" id="emiPlanEmpty" @if(count(old('emi_plans', []))) hidden @endif>No EMI plans added. You can add them later by editing this product.</p>
+                            </div>
+                        </div>
 
                                                 <!-- Sponsored / Offers -->
                         <div class="card border-0 shadow-sm" id="sponsoredCard">
@@ -852,6 +878,9 @@
     </script>
 
         <script>
+    (()=>{const body=document.getElementById('emiPlanRows'),add=document.getElementById('addEmiPlan'),empty=document.getElementById('emiPlanEmpty');if(!body||!add)return;const refresh=()=>empty.hidden=body.querySelectorAll('.emi-plan-row').length>0;add.addEventListener('click',()=>{const i=Date.now();const tr=document.createElement('tr');tr.className='emi-plan-row';tr.innerHTML='<td><input class="form-control form-control-sm" name="emi_plans['+i+'][bank_name]" maxlength="150" placeholder="Bank name" required></td><td><input class="form-control form-control-sm" type="number" name="emi_plans['+i+'][tenure_months]" min="1" max="120" placeholder="6" required></td><td><input class="form-control form-control-sm" type="number" name="emi_plans['+i+'][fee_percentage]" min="0" max="100" step="0.01" value="0" required></td><td><input type="hidden" name="emi_plans['+i+'][is_active]" value="0"><input class="form-check-input" type="checkbox" name="emi_plans['+i+'][is_active]" value="1" checked></td><td><button type="button" class="btn btn-outline-danger btn-sm remove-emi-plan" aria-label="Remove plan"><i class="bx bx-trash"></i></button></td>';body.appendChild(tr);refresh();tr.querySelector('input').focus();});body.addEventListener('click',e=>{const button=e.target.closest('.remove-emi-plan');if(button){button.closest('tr').remove();refresh();}});refresh();})();
+    </script>
+    <script>
         (function () {
             var input = document.getElementById('offer_images');
             if (!input) return;

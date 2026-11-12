@@ -1,6 +1,6 @@
 @php
     $currency = $siteSettings->currency_symbol ?? '৳';
-    $fmt = fn ($d) => $d ? \Carbon\Carbon::parse($d)->format('Y-m-d\TH:i') : '';
+    $fmt = fn ($d) => $d ? \Carbon\Carbon::parse($d)->timezone('Asia/Dhaka')->format('Y-m-d\TH:i') : '';
 @endphp
 
 <div class="row">

@@ -180,7 +180,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'route.permission'])
     Route::resource('orders/order-items', OrderItemController::class)->names('orders.order-items');
     Route::resource('orders/vendor-orders', VendorOrderController::class)->names('orders.vendor-orders');
     Route::resource('orders/supplier-orders', SupplierOrderController::class)->names('orders.supplier-orders');
-    Route::resource('orders/shipments', OrdersShipmentController::class)->only(['index', 'create', 'store'])->names('orders.shipments');
+    Route::get('orders/shipments/search', [OrdersShipmentController::class, 'searchOrders'])->name('orders.shipments.search');
+    Route::patch('orders/shipments/{shipment}/status', [OrdersShipmentController::class, 'updateStatus'])->name('orders.shipments.status');
+    Route::resource('orders/shipments', OrdersShipmentController::class)->only(['index', 'create', 'store', 'edit', 'update'])->names('orders.shipments');
     Route::get('orders/trackings', [OrdersTrackingController::class, 'index'])->name('orders.trackings');
     Route::get('orders/returns', [ReturnController::class, 'index'])->name('orders.returns');
     Route::resource('orders/refunds', RefundController::class)->names('orders.refunds');

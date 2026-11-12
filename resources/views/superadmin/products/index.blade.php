@@ -86,7 +86,10 @@
                                             <span class="text-muted">No image</span>
                                         @endif
                                     </td>
-                                    <td>{{ $product->name }}</td>
+                                    <td>{{ $product->name }}
+                                        @if($product->model_number)<div class="small text-muted">Model: {{ $product->model_number }}</div>@endif
+                                        @if($product->sku)<div class="small text-muted">SKU: {{ $product->sku }}</div>@endif
+                                    </td>
                                     <td>{{ $product->category->name ?? '—' }}</td>
                                     <td>{{ $product->brand->name ?? '—' }}</td>
                                     <td>

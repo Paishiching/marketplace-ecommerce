@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Checkout\PlaceOrderRequest;
 use App\Models\Customer;
+use App\Models\CartItem;
 use App\Models\Order;
+use App\Models\Product;
+use App\Models\Coupon;
 use App\Services\CartService;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
@@ -44,10 +47,39 @@ class CheckoutController extends Controller
             return redirect()->route('otp.login');
         }
 
-        $cartItems  = $this->cartService->getCartItems();
-        $cartTotal  = $this->cartService->getCartTotal();
-        $discount   = $this->cartService->getDiscountAmount();
-        $grandTotal = $this->cartService->getGrandTotal();
+        $newOrderCheckout = session('new_order_checkout');
+        if ($newOrderCheckout) {
+            $ids = collect($newOrderCheckout['items'] ?? [])->pluck('product_id')->unique()->values();
+            $products = Product::whereIn('id', $ids)->where('status', '!=', 'rejected')->with(['brand', 'primaryImage'])->get()->keyBy('id');
+            if ($products->count() !== $ids->count() || $ids->isEmpty()) {
+                session()->forget('new_order_checkout');
+                return redirect()->route('customer.new-order.create')->withErrors(['items' => 'Some selected products are no longer available. Please add them again.']);
+            }
+
+            $cartItems = collect($newOrderCheckout['items'])->map(function ($line) use ($products) {
+                $product = $products->get((int) $line['product_id']);
+                $item = new CartItem();
+                $item->forceFill([
+                    'product_id' => $product->id,
+                    'quantity' => (int) $line['quantity'],
+                    'price' => (float) ($product->discount_price > 0 ? $product->discount_price : $product->price),
+                ]);
+                $item->setRelation('product', $product);
+                return $item;
+            });
+            $cartTotal = (float) $cartItems->sum(fn ($item) => $item->price * $item->quantity);
+            $discount = $this->checkoutCouponDiscount((float) $cartTotal);
+            $grandTotal = $cartTotal - $discount;
+        } else {
+            $cartItems  = $this->cartService->getCartItems();
+            $cartTotal  = $this->cartService->getCartTotal();
+            $discount   = session('checkout_coupon_code')
+                ? $this->checkoutCouponDiscount((float) $cartTotal)
+                : $this->cartService->getDiscountAmount();
+            $grandTotal = $this->cartService->getGrandTotal();
+        }
+
+        $couponCode = session('checkout_coupon_code') ?: ($newOrderCheckout ? '' : ($this->cartService->getAppliedCoupon()?->code ?? ''));
 
         // Logged-in customer hole tar save kora thikana list dekhano hobe
         $savedAddresses = Auth::user()->customer
@@ -59,14 +91,69 @@ class CheckoutController extends Controller
         // Verify kora email/name + ager save kora phone => form e auto boshbe (abar type korte hobe na)
         $user    = Auth::user();
         $prefill = [
-            'name'  => (string) $user->name,
-            'email' => (string) $user->email,
-            'phone' => (string) $this->resolvePhone($user, $user->customer, $savedAddresses->last()),
+            'name'  => (string) ($newOrderCheckout['name'] ?? $user->name),
+            'email' => (string) ($newOrderCheckout['email'] ?? $user->email),
+            'phone' => (string) ($newOrderCheckout['phone'] ?? $this->resolvePhone($user, $user->customer, $savedAddresses->last())),
         ];
 
         return view('frontend.checkout.index', compact(
-            'cartItems', 'cartTotal', 'discount', 'grandTotal', 'savedAddresses', 'districts', 'prefill'
+            'cartItems', 'cartTotal', 'discount', 'grandTotal', 'savedAddresses', 'districts', 'prefill', 'couponCode'
         ));
+    }
+
+    public function applyCoupon(Request $request)
+    {
+        $data = $request->validate(['code' => ['required', 'string', 'max:50']]);
+        $coupon = Coupon::whereRaw('LOWER(code) = ?', [mb_strtolower(trim($data['code']))])->live()->first();
+        if (! $coupon) return response()->json(['success' => false, 'message' => 'Coupon code is invalid or expired.'], 422);
+        $subtotal = $this->checkoutSubtotal();
+        if ($coupon->min_order_amount && $subtotal < (float) $coupon->min_order_amount) {
+            return response()->json(['success' => false, 'message' => 'Minimum order amount is ৳'.number_format($coupon->min_order_amount, 2).'.'], 422);
+        }
+        if ($coupon->usage_limit && $coupon->used_count >= $coupon->usage_limit) {
+            return response()->json(['success' => false, 'message' => 'This coupon has reached its usage limit.'], 422);
+        }
+        session(['checkout_coupon_code' => $coupon->code]);
+        return response()->json(['success' => true, 'message' => 'Coupon applied.', 'code' => $coupon->code, 'discount' => $this->couponDiscount($coupon, $subtotal)]);
+    }
+
+    public function removeCoupon()
+    {
+        session()->forget('checkout_coupon_code');
+        return response()->json(['success' => true, 'discount' => 0]);
+    }
+
+    protected function checkoutSubtotal(): float
+    {
+        $manual = session('new_order_checkout');
+        if ($manual) {
+            $ids = collect($manual['items'] ?? [])->pluck('product_id');
+            return (float) Product::whereIn('id', $ids)->where('status', '!=', 'rejected')->get()
+                ->sum(fn ($product) => (float) ($product->discount_price > 0 ? $product->discount_price : $product->price)
+                    * (int) collect($manual['items'])->firstWhere('product_id', $product->id)['quantity']);
+        }
+        return $this->cartService->getCartTotal();
+    }
+
+    protected function checkoutCouponDiscount(float $subtotal): float
+    {
+        $code = session('checkout_coupon_code');
+        if ($code) {
+            $coupon = Coupon::where('code', $code)->live()->first();
+            if ($coupon && (! $coupon->min_order_amount || $subtotal >= (float) $coupon->min_order_amount)
+                && (! $coupon->usage_limit || $coupon->used_count < $coupon->usage_limit)) {
+                return $this->couponDiscount($coupon, $subtotal);
+            }
+            session()->forget('checkout_coupon_code');
+        }
+        return 0.0;
+    }
+
+    protected function couponDiscount(Coupon $coupon, float $subtotal): float
+    {
+        return $coupon->type === 'percentage'
+            ? min($subtotal, round($subtotal * ((float) $coupon->value / 100), 2))
+            : min($subtotal, (float) $coupon->value);
     }
 
     public function shippingCost(Request $request)
@@ -202,7 +289,10 @@ class CheckoutController extends Controller
         $customerId = optional(Auth::user()->customer)->id;
 
         try {
-            $order = $this->orderService->placeOrder($request->validated(), $customerId);
+            $newOrderCheckout = session('new_order_checkout');
+            $order = $this->orderService->placeOrder([...$request->validated(), 'coupon_code' => session('checkout_coupon_code')], $customerId, $newOrderCheckout['items'] ?? null);
+            if ($newOrderCheckout) session()->forget('new_order_checkout');
+            session()->forget('checkout_coupon_code');
 
             return redirect()
                 ->route('checkout.success', $order->order_number)

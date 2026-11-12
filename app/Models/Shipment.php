@@ -4,10 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Support\DeliveryOrderStatusSync;
 
 class Shipment extends Model
 {
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::updated(function (Shipment $shipment) {
+            if ($shipment->wasChanged('status')) {
+                DeliveryOrderStatusSync::syncFromShipment($shipment);
+            }
+        });
+    }
 
     protected $table = 'shipments';
 
@@ -20,6 +30,9 @@ class Shipment extends Model
         'vehicle_number',
         'vehicle_owner',
         'expected_arrival_at',
+        'delivery_date',
+        'delivery_estimate',
+        'customer_remark',
         'tracking_number',
         'consignment_id',
         'cod_amount',
@@ -34,6 +47,7 @@ class Shipment extends Model
         'shipped_at'     => 'datetime',
         'delivered_at'   => 'datetime',
         'expected_arrival_at' => 'date',
+        'delivery_date' => 'date',
         'last_synced_at' => 'datetime',
         'cod_amount'     => 'decimal:2',
     ];

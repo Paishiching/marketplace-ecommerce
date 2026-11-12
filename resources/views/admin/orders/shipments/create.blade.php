@@ -3,6 +3,7 @@
 @section('panel_content')
 @php($transportIndexRoute = auth()->user()->hasRole('superadmin') ? 'superadmin.delivery-transport.index' : 'admin.orders.shipments.index')
 @php($transportStoreRoute = auth()->user()->hasRole('superadmin') ? 'superadmin.delivery-transport.store' : 'admin.orders.shipments.store')
+@php($transportSearchRoute = auth()->user()->hasRole('superadmin') ? 'superadmin.delivery-transport.search' : 'admin.orders.shipments.search')
 <style>
     .transport-form{--tr-orange:#fd6801;--tr-navy:#2a3582}.transport-form .card{border:0;border-radius:14px;box-shadow:0 5px 24px rgba(42,53,130,.08)}
     .transport-form .form-label{font-weight:600;color:var(--tr-navy)}.transport-form .form-control,.transport-form .form-select{min-height:48px;border:1px solid #dfe3f0;border-radius:10px}
@@ -11,19 +12,17 @@
 <div class="transport-form">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3"><div><h3 class="mb-1">Delivery Transport</h3><p class="text-muted mb-0">Record self transport details for an order.</p></div><a href="{{ route($transportIndexRoute) }}" class="btn btn-outline-secondary">Back to transport list</a></div>
     @if($errors->any())<div class="alert alert-danger"><strong>Please check the form:</strong><ul class="mb-0 mt-1">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
-    @if(!$orders->count())<div class="alert alert-info">Every current order already has a delivery transport entry. A new entry can be added when another order is ready.</div>@endif
     <form method="POST" action="{{ route($transportStoreRoute) }}">
         @csrf
         <div class="card mb-3"><div class="card-body p-4">
             <h5 class="mb-3" style="color:#2a3582;font-weight:700">Customer and order</h5>
-            <label class="form-label" for="orderSelect">Select order <span class="text-danger">*</span></label>
-            <select class="form-select" name="order_id" id="orderSelect" required @disabled(!$orders->count())><option value="">Choose an order</option>
-                @foreach($orders as $order)
-                    <option value="{{ $order->id }}" data-party="{{ $order->customer_id ? '#'.$order->customer_id : '—' }}" data-name="{{ $order->name ?: $order->customer?->user?->name }}" data-phone="{{ $order->phone }}" @selected(old('order_id') == $order->id)>
-                        {{ $order->order_number }} · {{ $order->name ?: $order->customer?->user?->name ?: 'Customer' }} · {{ $order->phone }}
-                    </option>
-                @endforeach
-            </select>
+            <label class="form-label" for="orderSearch">Select order <span class="text-danger">*</span></label>
+            <div class="position-relative">
+                <input class="form-control" id="orderSearch" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" placeholder="Search order ID, order number, or customer name">
+                <input type="hidden" name="order_id" id="orderId" value="{{ old('order_id') }}">
+                <div id="orderResults" class="dropdown-menu w-100" role="listbox" style="max-height:260px;overflow:auto"></div>
+            </div>
+            <div id="selectedOrder" class="small text-success mt-2" aria-live="polite"></div>
             <div class="party-card mt-3" id="partyCard" hidden><div class="row g-3"><div class="col-sm-3"><div class="small text-muted">Party number</div><strong class="party-number" id="partyNumber">—</strong></div><div class="col-sm-5"><div class="small text-muted">Name</div><strong id="partyName">—</strong></div><div class="col-sm-4"><div class="small text-muted">Mobile</div><span id="partyPhone">—</span></div></div></div>
         </div></div>
         <div class="card mb-3"><div class="card-body p-4">
@@ -33,12 +32,14 @@
                 <div class="col-md-6"><label class="form-label" for="vehicleNumber">Vehicle number <span class="text-danger">*</span></label><input class="form-control" id="vehicleNumber" name="vehicle_number" value="{{ old('vehicle_number') }}" placeholder="Enter vehicle number" maxlength="50" required></div>
                 <div class="col-md-6"><label class="form-label" for="vehicleOwner">Vehicle owner / agency <span class="text-danger">*</span></label><input class="form-control" id="vehicleOwner" name="vehicle_owner" value="{{ old('vehicle_owner') }}" placeholder="Enter owner or agency name" maxlength="150" required></div>
                 <div class="col-md-6"><label class="form-label" for="expectedArrival">Expected arrival date <span class="text-danger">*</span></label><input class="form-control" type="date" id="expectedArrival" name="expected_arrival_at" value="{{ old('expected_arrival_at') }}" min="{{ now()->toDateString() }}" required></div>
+                <div class="col-md-6"><label class="form-label" for="deliveryDate">Delivery date</label><input class="form-control" type="date" id="deliveryDate" name="delivery_date" value="{{ old('delivery_date') }}" min="{{ now()->toDateString() }}"></div>
+                <div class="col-md-6"><label class="form-label" for="deliveryEstimate">Estimated delivery time</label><input class="form-control" id="deliveryEstimate" name="delivery_estimate" value="{{ old('delivery_estimate') }}" maxlength="120" placeholder="e.g. Within 2 days"></div>
             </div>
         </div></div>
-        <div class="d-flex justify-content-end gap-2"><a href="{{ route($transportIndexRoute) }}" class="btn btn-outline-secondary px-4">Cancel</a><button class="btn btn-primary px-4" type="submit" @disabled(!$orders->count())>Submit transport details</button></div>
+        <div class="d-flex justify-content-end gap-2"><a href="{{ route($transportIndexRoute) }}" class="btn btn-outline-secondary px-4">Cancel</a><button class="btn btn-primary px-4" type="submit">Submit transport details</button></div>
     </form>
 </div>
 <script>
-(() => {const select=document.getElementById('orderSelect');if(!select)return;const update=()=>{const option=select.selectedOptions[0],card=document.getElementById('partyCard');if(!option?.value){card.hidden=true;return;}card.hidden=false;document.getElementById('partyNumber').textContent=option.dataset.party||'—';document.getElementById('partyName').textContent=option.dataset.name||'Customer';document.getElementById('partyPhone').textContent=option.dataset.phone||'—';};select.addEventListener('change',update);if(select.value)update();})();
+(() => {const input=document.getElementById('orderSearch'),id=document.getElementById('orderId'),results=document.getElementById('orderResults'),card=document.getElementById('partyCard');let timer;const close=()=>{results.classList.remove('show');input.setAttribute('aria-expanded','false');};const show=()=>{results.classList.add('show');input.setAttribute('aria-expanded','true');};const choose=o=>{id.value=o.id;input.value=`${o.order_number} · ${o.name} · ${o.phone}`;document.getElementById('selectedOrder').textContent='Selected';document.getElementById('partyNumber').textContent=o.party;document.getElementById('partyName').textContent=o.name;document.getElementById('partyPhone').textContent=o.phone;card.hidden=false;results.innerHTML='';close();};input.addEventListener('input',()=>{id.value='';document.getElementById('selectedOrder').textContent='';card.hidden=true;clearTimeout(timer);const q=input.value.trim();results.innerHTML='';close();if(q.length<2&&!/^\d+$/.test(q))return;timer=setTimeout(async()=>{results.innerHTML='<span class="dropdown-item-text">Searching…</span>';show();try{const res=await fetch(`{{ route($transportSearchRoute) }}?q=${encodeURIComponent(q)}`,{headers:{Accept:'application/json'}});const rows=await res.json();results.innerHTML='';if(!rows.length){results.innerHTML='<span class="dropdown-item-text text-muted">No eligible orders found.</span>';return;}rows.forEach(o=>{const b=document.createElement('button');b.type='button';b.className='dropdown-item text-wrap';b.textContent=`${o.order_number} · ${o.name} · ${o.phone}`;b.addEventListener('click',()=>choose(o));results.appendChild(b);});}catch(e){results.innerHTML='<span class="dropdown-item-text text-danger">Could not search orders. Try again.</span>'; }},250);});input.addEventListener('keydown',e=>{if(e.key==='Escape')close();});document.addEventListener('click',e=>{if(!results.contains(e.target)&&e.target!==input)close();});if(id.value){fetch(`{{ route($transportSearchRoute) }}?q=${encodeURIComponent(id.value)}`,{headers:{Accept:'application/json'}}).then(r=>r.json()).then(rows=>{const o=rows.find(x=>String(x.id)===id.value);if(o)choose(o);}).catch(()=>{});}})();
 </script>
 @endsection

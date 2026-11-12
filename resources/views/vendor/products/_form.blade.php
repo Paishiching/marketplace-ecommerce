@@ -62,6 +62,20 @@
                 </div>
 
                 <div class="mb-3">
+                    <label for="model_number" class="form-label">Model number <span class="text-muted">(optional)</span></label>
+                    <input type="text" name="model_number" id="model_number" class="form-control @error('model_number') is-invalid @enderror"
+                           placeholder="e.g. QA55Q60D" value="{{ old('model_number', $p->model_number ?? '') }}" maxlength="150">
+                    @error('model_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="mb-3">
+                    <label for="warranty" class="form-label">Warranty</label>
+                    <input type="text" name="warranty" id="warranty" class="form-control @error('warranty') is-invalid @enderror"
+                           placeholder="e.g. 3 years replacement warranty" value="{{ old('warranty', $p->warranty ?? '') }}" maxlength="190">
+                    @error('warranty') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
+
+                <div class="mb-3">
                     <label for="short_description" class="form-label">Short Description</label>
                     <textarea name="short_description" id="short_description" rows="2" class="form-control"
                               placeholder="A brief summary shown on listing / card pages">{{ old('short_description', $p->short_description ?? '') }}</textarea>

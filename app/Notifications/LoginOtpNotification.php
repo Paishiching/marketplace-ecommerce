@@ -28,16 +28,9 @@ class LoginOtpNotification extends Notification
         }
 
         $siteName = $site->site_name ?? config('app.name');
-        $logoRel  = ! empty($site->logo_dark) || ! empty($site->logo)
-            ? ltrim($site->logo ?: $site->logo_dark, '/')
-            : null;
-
-        // Embed na kore public URL : tahole Gmail e attachment chip ashbe na
-        $logoUrl = $logoRel
-            ? rtrim(config('app.url'), '/') . '/storage/' . $logoRel
-            : null;
-
-        $subject = $this->code . ' is your ' . $siteName . ' verification code';
+        // Keep the one-time code out of the subject so it is not exposed in
+        // lock-screen previews and so the subject stays clearly transactional.
+        $subject = 'Your ' . $siteName . ' verification code';
 
         return (new MailMessage)
             ->subject($subject)
@@ -46,7 +39,11 @@ class LoginOtpNotification extends Notification
                 'code'     => $this->code,
                 'minutes'  => $this->minutes,
                 'siteName' => $siteName,
-                'logoUrl'  => $logoUrl,
+            ])
+            ->text('emails.otp-text', [
+                'code'     => $this->code,
+                'minutes'  => $this->minutes,
+                'siteName' => $siteName,
             ]);
     }
 }

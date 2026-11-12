@@ -67,7 +67,12 @@ use App\Http\Controllers\SuperAdmin\WarrantyRegistrationController;
 
 Route::prefix('superadmin')->name('superadmin.')->middleware(['auth', 'route.permission'])->group(function () {
     Route::resource('manual-orders', AdminOrdersOrderController::class)->only(['index', 'create', 'store', 'show'])->parameters(['manual-orders' => 'order'])->names('manual-orders');
-    Route::resource('delivery-transport', AdminDeliveryTransportController::class)->only(['index', 'create', 'store'])->names('delivery-transport');
+    Route::get('delivery-transport/search', [AdminDeliveryTransportController::class, 'searchOrders'])->name('delivery-transport.search');
+    Route::patch('delivery-transport/{shipment}/status', [AdminDeliveryTransportController::class, 'updateStatus'])->name('delivery-transport.status');
+    Route::resource('delivery-transport', AdminDeliveryTransportController::class)
+        ->only(['index', 'create', 'store', 'edit', 'update'])
+        ->parameters(['delivery-transport' => 'shipment'])
+        ->names('delivery-transport');
     Route::get('payment-deposits/{deposit}/receipt', [\App\Http\Controllers\PaymentDepositReceiptController::class, 'show'])->name('payment-deposits.receipt');
     Route::get('buyer-requests', [\App\Http\Controllers\Admin\RfqController::class, 'index'])->name('rfqs.index');
     Route::get('buyer-requests/{rfq}', [\App\Http\Controllers\Admin\RfqController::class, 'show'])->name('rfqs.show');

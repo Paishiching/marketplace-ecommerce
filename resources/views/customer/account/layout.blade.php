@@ -142,7 +142,11 @@
 
                 <aside class="dsh-side">
                     <div class="dsh-profile">
-                        <div class="dsh-avatar">{{ mb_substr(Auth::user()->name, 0, 1) }}</div>
+                        @if(Auth::user()->avatar)
+                            <img class="dsh-avatar" src="{{ str_starts_with(Auth::user()->avatar, 'http') ? Auth::user()->avatar : asset('storage/'.Auth::user()->avatar) }}" alt="Profile photo" style="object-fit:cover">
+                        @else
+                            <div class="dsh-avatar">{{ mb_substr(Auth::user()->name, 0, 1) }}</div>
+                        @endif
                         <div class="dsh-profile-meta"><h5>{{ Auth::user()->name }}</h5>
                         <small>{{ Auth::user()->email }}</small></div>
                         <button type="button" class="dsh-menu-toggle" aria-label="Open account menu" aria-expanded="false" aria-controls="customerAccountMenu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
@@ -157,6 +161,11 @@
                         <li>
                             <a href="{{ route('account.orders') }}" class="{{ request()->routeIs('account.orders') ? 'active' : '' }}">
                                 <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg> My Orders
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('customer.new-order.create') }}" class="{{ request()->routeIs('customer.new-order.*') ? 'active' : '' }}">
+                                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 4h2l2.4 11.2a2 2 0 002 1.6h8.2a2 2 0 002-1.5L21.5 8H6"/><path d="M12 10v6m-3-3h6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg> New Order
                             </a>
                         </li>
                         <li>

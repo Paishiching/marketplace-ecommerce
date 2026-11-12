@@ -19,7 +19,9 @@
                             <td>{{ $order->orderItems->count() }}</td>
                             <td><strong>Tk. {{ number_format($order->total, 2) }}</strong></td>
                             <td><span class="dsh-badge {{ $order->payment_status }}">{{ $order->payment_status ?: 'unpaid' }}</span></td>
-                            <td><span class="dsh-badge {{ $order->status }}">{{ $order->status }}</span></td>
+                            @php($orderStatus = $order->shipments->sortByDesc('id')->first()?->status ?: $order->status)
+                            @php($orderStatusLabel = str($orderStatus)->replace('_', ' ')->title())
+                            <td><span class="dsh-badge {{ $orderStatus }}">{{ $orderStatusLabel }}</span></td>
                             <td><a class="dsh-view" href="{{ route('checkout.success', $order->order_number) }}">View</a></td>
                         </tr>
                     @endforeach

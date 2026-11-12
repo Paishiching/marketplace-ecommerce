@@ -6,9 +6,23 @@
         <div class="dsh-card-head"><h3>Edit Profile</h3></div>
 
         <div class="dsh-body">
-            <form method="POST" action="{{ route('account.profile.update') }}">
+            <form method="POST" action="{{ route('account.profile.update') }}" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
+
+                <div class="dsh-f" style="margin-bottom:20px">
+                    <label for="customerAvatar">Profile photo</label>
+                    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+                        @if($user->avatar)
+                            <img src="{{ str_starts_with($user->avatar, 'http') ? $user->avatar : asset('storage/'.$user->avatar) }}" alt="Profile photo" style="width:76px;height:76px;border-radius:50%;object-fit:cover;border:2px solid #e7ebf3">
+                        @else
+                            <div class="dsh-avatar" style="background:#eef1f7;color:#303f8f">{{ mb_substr($user->name, 0, 1) }}</div>
+                        @endif
+                        <input id="customerAvatar" type="file" name="avatar" accept="image/jpeg,image/png,image/webp">
+                    </div>
+                    <small class="dsh-muted">JPG, PNG or WebP, up to 5 MB.</small>
+                    @error('avatar')<span class="dsh-err">{{ $message }}</span>@enderror
+                </div>
 
                 <div class="dsh-row">
                     <div class="dsh-f">

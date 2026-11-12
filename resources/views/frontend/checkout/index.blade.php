@@ -3,7 +3,7 @@
 @section('title', 'Checkout')
 @section('content')
 
-    <link rel="stylesheet" href="{{ asset('/') }}frontend/assets/css/eb-checkout.css?v=7">
+    <link rel="stylesheet" href="{{ asset('/') }}frontend/assets/css/eb-checkout.css?v=8">
 
     <div class="ck-page">
         <div class="container">
@@ -20,7 +20,7 @@
             @else
 
                 @php
-                    $selectedAddressId = old('shipping_address_id');
+                    $selectedAddressId = old('shipping_address_id', session('new_order_checkout.shipping_address_id'));
                     $hasSaved          = $savedAddresses->count() > 0;
                     $hasOldNew         = !$selectedAddressId && (old('address_line1') || old('city'));
                     $checkedId         = $hasOldNew ? null : ($selectedAddressId ?: optional($savedAddresses->first())->id);
@@ -46,9 +46,13 @@
                 @if(session('error'))
                     <div class="ck-alert">{{ session('error') }}</div>
                 @endif
+                @if(session('success'))
+                    <div class="ck-alert">{{ session('success') }}</div>
+                @endif
 
                 <form action="{{ route('checkout.store') }}" method="POST" id="checkoutForm" enctype="multipart/form-data" novalidate>
                     @csrf
+                    <input type="hidden" name="coupon_code" id="checkoutCouponCode" value="{{ $couponCode }}">
                     {{-- payment_method : Step 2 er radio theke ashe --}}
 
                     <div class="ck-grid">
@@ -146,7 +150,7 @@
 
                                 <div class="ck-field">
                                     <label class="lb">Additional Instructions (Optional)</label>
-                                    <textarea name="notes" placeholder="Enter any additional instructions for your order">{{ old('notes') }}</textarea>
+                                    <textarea name="notes" placeholder="Enter any additional instructions for your order">{{ old('notes', session('new_order_checkout.notes')) }}</textarea>
                                 </div>
                             </div>
 
@@ -265,7 +269,15 @@
                             <aside class="ck-side">
                                 <h2>Order Summary</h2>
 
-                                <div class="ck-cart-promo">Have a discount code? <a href="{{ route('cart.index') }}">Apply it in your cart</a> before checkout.</div>
+                                <div class="ck-cart-promo" style="text-align:left">
+                                    <label for="checkoutCouponInput" style="display:block;margin-bottom:7px">Coupon code</label>
+                                    <div class="ck-coupon-row">
+                                        <input id="checkoutCouponInput" type="text" value="{{ $couponCode }}" placeholder="Enter coupon code" autocomplete="off">
+                                        <button type="button" id="applyCheckoutCoupon" class="ck-coupon-btn ck-coupon-apply">Apply</button>
+                                        <button type="button" id="removeCheckoutCoupon" class="ck-coupon-btn ck-coupon-remove" style="display:{{ $couponCode ? 'inline-flex' : 'none' }}">Remove</button>
+                                    </div>
+                                    <small id="checkoutCouponMessage" aria-live="polite" style="display:block;margin-top:6px">{{ $couponCode ? 'Coupon applied.' : 'Apply a coupon to get a discount.' }}</small>
+                                </div>
 
                                 <button type="button" class="ck-items-bar" id="itemsToggle">
                                     <b>{{ $itemCount }} item{{ $itemCount > 1 ? 's' : '' }} to checkout</b>
@@ -378,6 +390,7 @@
                         var csrfToken    = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
                         var cartSubtotal = {{ (float) $cartTotal }};
                         var cartDiscount = {{ (float) $discount }};
+                        var currentShippingCost = 0;
                         var allDistricts = @json(collect($districts)->values());
                         var oldCity      = @json(old('city'));
                         var oldArea      = @json(old('address_line2'));
@@ -634,8 +647,38 @@
                                 (cost === 0 ? 'Free' : money(cost)) + '</b></div>';
                         }
                         function updateGrandTotal(shippingCost) {
+                            currentShippingCost = shippingCost;
                             document.getElementById('summaryGrandTotal').textContent = money(cartSubtotal - cartDiscount + shippingCost);
                         }
+                        function updateCouponDisplay(discount, message, success) {
+                            cartDiscount = parseFloat(discount || 0);
+                            document.getElementById('summaryDiscount').textContent = money(cartDiscount);
+                            document.getElementById('summaryGrandTotal').textContent = money(cartSubtotal - cartDiscount + currentShippingCost);
+                            var msg = document.getElementById('checkoutCouponMessage');
+                            msg.textContent = message;
+                            msg.style.color = success ? '#16804a' : '#c0392b';
+                        }
+                        document.getElementById('applyCheckoutCoupon').addEventListener('click', function () {
+                            var input = document.getElementById('checkoutCouponInput');
+                            var code = input.value.trim();
+                            if (!code) { updateCouponDisplay(0, 'Enter a coupon code first.', false); return; }
+                            fetch("{{ route('checkout.coupon.apply') }}", {
+                                method: 'POST', headers: {'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken,'Accept':'application/json'},
+                                body: JSON.stringify({code: code})
+                            }).then(function (response) { return response.json().then(function (data) { return {ok: response.ok, data: data}; }); })
+                              .then(function (result) {
+                                  if (!result.ok || !result.data.success) { document.getElementById('checkoutCouponCode').value=''; document.getElementById('removeCheckoutCoupon').style.display='none'; updateCouponDisplay(0, result.data.message || 'Could not apply this coupon.', false); return; }
+                                  input.value = result.data.code; document.getElementById('checkoutCouponCode').value = result.data.code;
+                                  document.getElementById('removeCheckoutCoupon').style.display='inline-flex'; updateCouponDisplay(result.data.discount, result.data.message, true);
+                              }).catch(function () { updateCouponDisplay(cartDiscount, 'Could not check the coupon. Please try again.', false); });
+                        });
+                        document.getElementById('removeCheckoutCoupon').addEventListener('click', function () {
+                            fetch("{{ route('checkout.coupon.remove') }}", {method:'POST',headers:{'X-CSRF-TOKEN':csrfToken,'Accept':'application/json'}})
+                              .then(function (response) { return response.json(); }).then(function (data) {
+                                  document.getElementById('checkoutCouponCode').value=''; document.getElementById('checkoutCouponInput').value='';
+                                  document.getElementById('removeCheckoutCoupon').style.display='none'; updateCouponDisplay(0, 'Coupon removed.', true);
+                              });
+                        });
                         function fetchShippingCost(city) {
                             var el = document.getElementById('summaryShipping');
                             if (!city) {

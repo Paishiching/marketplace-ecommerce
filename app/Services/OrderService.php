@@ -3,12 +3,15 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\ShippingAddress;
 use App\Models\VendorOrder;
 use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\CouponUsage;
+use App\Models\Coupon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Exception;
 
@@ -29,15 +32,65 @@ class OrderService
      * @param  array  $data  validated request data
      * @param  int|null  $customerId  guest হলে null
      */
-    public function placeOrder(array $data, ?int $customerId): Order
+    public function placeOrder(array $data, ?int $customerId, ?array $manualItems = null): Order
     {
-        $cartItems = $this->cartService->getCartItems();
+        if ($manualItems !== null) {
+            $productIds = collect($manualItems)->pluck('product_id')->unique()->values();
+            $products = Product::whereIn('id', $productIds)->where('status', '!=', 'rejected')->get()->keyBy('id');
+            if ($products->count() !== $productIds->count()) {
+                throw new Exception('One or more selected products are no longer available. Please return to New Order and review your items.');
+            }
 
-        if ($cartItems->isEmpty()) {
-            throw new Exception('Your cart is empty.');
+            $orderLines = collect($manualItems)->map(function ($item) use ($products) {
+                $product = $products->get((int) $item['product_id']);
+                $price = (float) ($product->discount_price > 0 ? $product->discount_price : $product->price);
+
+                return [
+                    'product_id' => $product->id,
+                    'product_variant_id' => null,
+                    'vendor_id' => $product->vendor_id,
+                    'quantity' => (int) $item['quantity'],
+                    'price' => $price,
+                ];
+            });
+            if ($orderLines->isEmpty()) throw new Exception('Your order has no products.');
+            $cartItems = collect();
+            $subtotal = (float) $orderLines->sum(fn ($item) => $item['price'] * $item['quantity']);
+            $appliedCoupon = ! empty($data['coupon_code'])
+                ? Coupon::where('code', $data['coupon_code'])->live()->first()
+                : null;
+            if (! empty($data['coupon_code']) && ! $appliedCoupon) throw new Exception('Coupon code is invalid or expired. Please apply it again.');
+            if ($appliedCoupon && $appliedCoupon->min_order_amount && $subtotal < (float) $appliedCoupon->min_order_amount) throw new Exception('The order does not meet this coupon’s minimum amount.');
+            if ($appliedCoupon && $appliedCoupon->usage_limit && $appliedCoupon->used_count >= $appliedCoupon->usage_limit) throw new Exception('This coupon has reached its usage limit.');
+            $discount = $appliedCoupon ? ($appliedCoupon->type === 'percentage'
+                ? min($subtotal, round($subtotal * ((float) $appliedCoupon->value / 100), 2))
+                : min($subtotal, (float) $appliedCoupon->value)) : 0.0;
+        } else {
+            $cartItems = $this->cartService->getCartItems();
+            if ($cartItems->isEmpty()) throw new Exception('Your cart is empty.');
+            $orderLines = $cartItems->map(fn ($item) => [
+                'product_id' => $item->product_id,
+                'product_variant_id' => $item->product_variant_id ?? null,
+                'vendor_id' => $item->product->vendor_id ?? null,
+                'quantity' => $item->quantity,
+                'price' => $item->price,
+            ]);
+            $subtotal = (float) $this->cartService->getCartTotal();
+            $discount = (float) $this->cartService->getDiscountAmount();
+            $appliedCoupon = ! empty($data['coupon_code'])
+                ? Coupon::where('code', $data['coupon_code'])->live()->first()
+                : $this->cartService->getAppliedCoupon();
+            if (! empty($data['coupon_code']) && ! $appliedCoupon) throw new Exception('Coupon code is invalid or expired. Please apply it again.');
+            if ($appliedCoupon) {
+                if ($appliedCoupon->min_order_amount && $subtotal < (float) $appliedCoupon->min_order_amount) throw new Exception('The order does not meet this coupon’s minimum amount.');
+                if ($appliedCoupon->usage_limit && $appliedCoupon->used_count >= $appliedCoupon->usage_limit) throw new Exception('This coupon has reached its usage limit.');
+                $discount = $appliedCoupon->type === 'percentage'
+                    ? min($subtotal, round($subtotal * ((float) $appliedCoupon->value / 100), 2))
+                    : min($subtotal, (float) $appliedCoupon->value);
+            }
         }
 
-        return DB::transaction(function () use ($data, $customerId, $cartItems) {
+        return DB::transaction(function () use ($data, $customerId, $orderLines, $subtotal, $discount, $appliedCoupon, $manualItems) {
 
             // ---- ১. Shipping Address resolve/তৈরি করা ----
             $address = $this->resolveShippingAddress($data, $customerId);
@@ -47,9 +100,6 @@ class OrderService
             $shippingCost = $shipping['rate'] ? (float) $shipping['rate']->rate : 0.0;
 
             // ---- ৩. Totals ক্যালকুলেট ----
-            $subtotal   = (float) $this->cartService->getCartTotal();
-            $discount   = (float) $this->cartService->getDiscountAmount();
-            $appliedCoupon = $this->cartService->getAppliedCoupon();
             $grandTotal = $subtotal - $discount + $shippingCost;
 
             // ---- ৪. Order তৈরি ----
@@ -70,17 +120,18 @@ class OrderService
                 'shipping_address_id'  => $address->id,
                 'shipping_zone_id'     => $shipping['zone']->id ?? null,
                 'notes'                => $data['notes'] ?? null,
+                ...($manualItems !== null ? ['source' => 'customer', 'created_by' => Auth::id()] : []),
             ]);
 
             // ---- ৫. Order Items তৈরি ----
-            foreach ($cartItems as $item) {
+            foreach ($orderLines as $item) {
                 $order->orderItems()->create([
-                    'product_id'         => $item->product_id,
-                    'product_variant_id' => $item->product_variant_id ?? null,
-                    'vendor_id'          => $item->product->vendor_id ?? null,
-                    'quantity'           => $item->quantity,
-                    'unit_price'         => $item->price,
-                    'total_price'        => $item->price * $item->quantity,
+                    'product_id'         => $item['product_id'],
+                    'product_variant_id' => $item['product_variant_id'],
+                    'vendor_id'          => $item['vendor_id'],
+                    'quantity'           => $item['quantity'],
+                    'unit_price'         => $item['price'],
+                    'total_price'        => $item['price'] * $item['quantity'],
                 ]);
             }
 
@@ -139,7 +190,9 @@ class OrderService
             }
 
             // ---- ৯. Cart খালি করা ----
-            $this->cartService->clearCart();
+            if ($manualItems === null) {
+                $this->cartService->clearCart();
+            }
 
             return $order;
         });
@@ -152,7 +205,7 @@ class OrderService
     protected function resolveShippingAddress(array $data, ?int $customerId): ShippingAddress
     {
         if (! empty($data['shipping_address_id'])) {
-            return ShippingAddress::findOrFail($data['shipping_address_id']);
+            return ShippingAddress::where('customer_id', $customerId)->findOrFail($data['shipping_address_id']);
         }
 
         $values = [

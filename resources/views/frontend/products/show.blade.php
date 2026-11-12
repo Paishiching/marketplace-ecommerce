@@ -6,8 +6,7 @@
     {{-- product-card partial (.eb-pc) er style --}}
     <link rel="stylesheet" href="{{ asset('/') }}frontend/assets/css/eb-home.css?v=8">
     {{-- product details page er style --}}
-    <link rel="stylesheet" href="{{ asset('/') }}frontend/assets/css/eb-product.css?v=1">
-    <style>.pd-btn-quote{background:#fff1e5;color:#e85d04;border:1px solid #ffc99e;text-decoration:none}.pd-btn-quote:hover{background:#ffe2cb;color:#c94b00}.pd-actions .pd-btn-quote{min-width:120px}.pd-quote-mobile{width:100%;margin-top:14px;text-align:center}.pd-sticky .pd-btn{min-width:0;padding-left:6px;padding-right:6px;white-space:nowrap;font-size:13px}@media(max-width:380px){.pd-sticky{gap:6px;padding-left:8px;padding-right:8px}.pd-sticky .pd-btn{font-size:11px;padding-left:3px;padding-right:3px}}</style>
+    <link rel="stylesheet" href="{{ asset('/') }}frontend/assets/css/eb-product.css?v=3">
 
     @php
         $fallbackImg = asset('frontend/assets/images/imageIcon/image.jpg');
@@ -55,8 +54,17 @@
                 ]),
             ];
 
+        $warrantyText = $product->warranty ?: $product->productSpecifications
+            ->first(fn ($spec) => str_contains(strtolower((string) $spec->name), 'warranty'))?->value;
+        $emiPlans = $product->productEmiPlans->where('is_active', true)->values();
+        $emiBanks = $emiPlans->groupBy('bank_name');
+
         $starSvg  = '<svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg>';
         $shareUrl = urlencode(url()->current());
+        $whatsappNumber = preg_replace('/[^0-9]/', '', (string) ($site->whatsapp_number ?? ''));
+        $chatMessage = "Hello Buydor BD, I want to know more about {$product->name}" . ($product->sku ? " (SKU: {$product->sku})" : '') . '. ' . url()->current();
+        $productChatUrl = 'https://wa.me/' . $whatsappNumber . '?text=' . rawurlencode($chatMessage);
+        $emiMessage = "Hello Buydor BD, please share the current EMI plans for {$product->name}" . ($product->sku ? " (SKU: {$product->sku})" : '') . '. ' . url()->current();
 
         // ---------- Sponsored popup : video (optional) + offer images ----------
         $slides = [];
@@ -117,6 +125,10 @@
                                      onerror="this.onerror=null;this.src='{{ $fallbackImg }}';">
                             </div>
                         </div>
+                        <a class="pd-gallery-chat" href="{{ $productChatUrl }}" target="_blank" rel="noopener noreferrer">
+                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.52 3.48A11.85 11.85 0 0 0 12.07 0C5.5 0 .16 5.34.16 11.91c0 2.1.55 4.15 1.59 5.96L.06 24l6.28-1.65a11.9 11.9 0 0 0 5.72 1.46h.01c6.57 0 11.91-5.34 11.92-11.91a11.85 11.85 0 0 0-3.47-8.42ZM12.07 21.8a9.9 9.9 0 0 1-5.04-1.38l-.36-.21-3.73.98.99-3.64-.24-.37a9.88 9.88 0 1 1 8.38 4.62Zm5.42-7.4c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.66.15-.2.3-.76.96-.93 1.16-.17.2-.34.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.78-1.47-1.75-1.64-2.04-.17-.3-.02-.46.13-.61.13-.13.3-.34.45-.51.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.66-1.6-.9-2.2-.24-.58-.48-.5-.66-.51h-.56c-.2 0-.52.07-.79.37-.27.3-1.03 1.01-1.03 2.46 0 1.45 1.06 2.85 1.2 3.05.14.2 2.08 3.18 5.03 4.46.7.3 1.24.48 1.66.62.7.22 1.33.19 1.83.12.56-.08 1.75-.72 2-1.42.25-.7.25-1.3.18-1.42-.08-.13-.27-.2-.57-.35Z"/></svg>
+                            <span>Chat Now on WhatsApp</span>
+                        </a>
                     </div>
 
                     {{-- ---------- Product info ---------- --}}
@@ -143,6 +155,9 @@
                                 @if($product->sku)
                                     <span>Reference : <b>{{ $product->sku }}</b></span>
                                 @endif
+                                @if($product->model_number)
+                                    <span>Model : <b>{{ $product->model_number }}</b></span>
+                                @endif
                             </div>
 
                             <div class="pd-rate">
@@ -163,6 +178,16 @@
                                 @endif
                                 <span class="pd-stock {{ $inStock ? 'is-in' : 'is-out' }}">{{ $inStock ? 'In Stock' : 'Out of Stock' }}</span>
                             </div>
+
+                            @if($emiPlans->isNotEmpty())
+                                <div class="pd-finance-row">
+                                    <span><strong>EMI Available</strong></span>
+                                    <button type="button" id="openEmiPlans">View Plans <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
+                                </div>
+                            @endif
+                            @if($warrantyText)
+                                <div class="pd-warranty-row"><span><strong>Warranty:</strong> {{ $warrantyText }}</span></div>
+                            @endif
 
                             @if(!empty($product->short_description))
                                 <div class="pd-short">{!! $product->short_description !!}</div>
@@ -242,9 +267,7 @@
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l1 13H5z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
                                     Buy Now
                                 </button>
-                                <a class="pd-btn pd-btn-auto pd-btn-quote" href="{{ route('customer.rfqs.create', ['product' => $product->name]) }}">Chat Now</a>
                             </div>
-                            <a class="pd-btn pd-btn-quote pd-quote-mobile d-lg-none" href="{{ route('customer.rfqs.create', ['product' => $product->name]) }}">Chat Now</a>
 
                         </div>
                     </div>
@@ -438,12 +461,44 @@
             </div>
         </div>
 
-        {{-- ================= MOBILE STICKY BAR (Chat Now + Add to Cart + Buy Now) ================= --}}
+        {{-- ================= MOBILE STICKY BAR ================= --}}
         <div class="pd-sticky">
-            <a class="pd-btn pd-btn-quote" href="{{ route('customer.rfqs.create', ['product' => $product->name]) }}">Chat Now</a>
             <button type="button" class="pd-btn pd-btn-cart js-add-to-cart" data-product-id="{{ $product->id }}" {{ $inStock ? '' : 'disabled' }}>Add To Cart</button>
             <button type="button" class="pd-btn pd-btn-buy js-buy-now" data-product-id="{{ $product->id }}" {{ $inStock ? '' : 'disabled' }}>Buy Now</button>
         </div>
+
+        @if($emiPlans->isNotEmpty())
+            <dialog class="pd-emi-dialog" id="emiPlansDialog" aria-labelledby="emiDialogTitle">
+                <div class="pd-emi-dialog-head"><div><span class="pd-emi-kicker">{{ $product->name }}</span><h2 id="emiDialogTitle">EMI Options</h2></div><button type="button" id="closeEmiPlans" aria-label="Close EMI plans">&times;</button></div>
+                <div class="pd-emi-modal-layout">
+                    <div class="pd-emi-bank-list" role="tablist" aria-label="Select bank">
+                        @foreach($emiBanks as $bankName => $plans)
+                            <button type="button" class="pd-emi-bank {{ $loop->first ? 'is-active' : '' }}" data-bank="{{ $loop->index }}" role="tab" aria-selected="{{ $loop->first ? 'true' : 'false' }}">{{ $bankName }}</button>
+                        @endforeach
+                    </div>
+                    <div class="pd-emi-plan-panels">
+                        @foreach($emiBanks as $bankName => $plans)
+                            <section class="pd-emi-bank-panel {{ $loop->first ? 'is-active' : '' }}" data-bank-panel="{{ $loop->index }}" role="tabpanel">
+                                <h3>{{ $bankName }}</h3>
+                                @foreach($plans as $plan)
+                                    @php
+                                        $monthly = ((float) $unitPrice * (1 + ((float) $plan->fee_percentage / 100))) / max(1, (int) $plan->tenure_months);
+                                    @endphp
+                                    <div class="pd-emi-plan-row">
+                                        <span><strong>{{ $plan->tenure_months }} EMIs</strong><small>Convenience fee {{ number_format((float) $plan->fee_percentage, 2) }}%</small></span>
+                                        <b>৳ {{ number_format($monthly, 2) }}<small>/ month</small></b>
+                                    </div>
+                                @endforeach
+                            </section>
+                        @endforeach
+                    </div>
+                </div>
+                <p class="pd-emi-disclaimer">Monthly amounts are estimates based on the plan configured for this product. Your bank may apply its own final terms and charges.</p>
+            </dialog>
+            <script>
+                (function(){var dialog=document.getElementById('emiPlansDialog'),open=document.getElementById('openEmiPlans'),close=document.getElementById('closeEmiPlans');if(!dialog||!open||!close)return;open.addEventListener('click',function(){if(dialog.showModal)dialog.showModal();});close.addEventListener('click',function(){dialog.close();});dialog.addEventListener('click',function(event){if(event.target===dialog)dialog.close();});dialog.querySelectorAll('.pd-emi-bank').forEach(function(button){button.addEventListener('click',function(){var key=this.dataset.bank;dialog.querySelectorAll('.pd-emi-bank').forEach(function(item){var active=item===button;item.classList.toggle('is-active',active);item.setAttribute('aria-selected',active?'true':'false');});dialog.querySelectorAll('.pd-emi-bank-panel').forEach(function(panel){panel.classList.toggle('is-active',panel.dataset.bankPanel===key);});});});})();
+            </script>
+        @endif
 
         {{-- ================= SPONSORED POPUP (video + offer images) ================= --}}
         @if($hasSponsored)

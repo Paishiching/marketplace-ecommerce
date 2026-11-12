@@ -65,11 +65,11 @@
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between px-0">
                                     <span class="text-muted">Starts</span>
-                                    <span>{{ $coupon->starts_at ? $coupon->starts_at->format('d M Y, h:i A') : 'Immediately' }}</span>
+                                    <span>{{ $coupon->starts_at ? $coupon->starts_at->copy()->timezone('Asia/Dhaka')->format('d M Y, h:i A') : 'Immediately' }}</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between px-0">
                                     <span class="text-muted">Expires</span>
-                                    <span>{{ $coupon->expires_at ? $coupon->expires_at->format('d M Y, h:i A') : 'Never' }}</span>
+                                    <span>{{ $coupon->expires_at ? $coupon->expires_at->copy()->timezone('Asia/Dhaka')->format('d M Y, h:i A') : 'Never' }}</span>
                                 </li>
                                 <li class="list-group-item d-flex justify-content-between px-0">
                                     <span class="text-muted">Created</span>

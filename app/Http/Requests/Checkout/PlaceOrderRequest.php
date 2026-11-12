@@ -28,6 +28,7 @@ class PlaceOrderRequest extends FormRequest
             'postal_code'   => ['nullable', 'string', 'max:20'],
 
             'payment_method' => ['required', 'in:cod,sslcommerz,bank_deposit'],
+            'coupon_code' => ['nullable', 'string', 'max:50'],
             'deposit_date' => ['required_if:payment_method,bank_deposit', 'nullable', 'date', 'before_or_equal:today'],
             'depositor_bank' => ['required_if:payment_method,bank_deposit', 'nullable', 'string', 'max:150'],
             'depositor_branch' => ['required_if:payment_method,bank_deposit', 'nullable', 'string', 'max:150'],

@@ -52,8 +52,8 @@
                     <h1>Verify Your Email Address</h1>
 
                     <p class="ebl-msg">
-                        We've sent a 6-digit OTP to <b>{{ $email }}</b>. Enter it below to verify your email.
-                        If you don't see it, check your spam/junk folder.
+                        We've sent a 6-digit OTP to <b>{{ $email }}</b>. In Gmail, tap <b>Copy code</b>, return here, then tap <b>Paste code</b>.
+                        If the email isn't in your inbox, check Spam or Promotions.
                     </p>
 
                     @if(session('status'))

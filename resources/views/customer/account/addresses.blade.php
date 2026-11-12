@@ -17,13 +17,15 @@
                             <span>{{ $addr->address_line1 }}</span>
                             @if($addr->address_line2)<span>{{ $addr->address_line2 }}</span>@endif
                             <span>{{ $addr->city }}</span>
+                            @if($addr->state)<span>{{ $addr->state }}</span>@endif
                             <span>{{ $addr->phone }}</span>
 
-                            <form method="POST" action="{{ route('account.addresses.destroy', $addr->id) }}" onsubmit="return confirm('Delete this address?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="dsh-del">Delete</button>
-                            </form>
+                            <div class="d-flex gap-2 mt-2"><a class="dsh-view" href="{{ route('account.addresses.edit', $addr->id) }}">Edit address</a>
+                                <form method="POST" action="{{ route('account.addresses.destroy', $addr->id) }}" onsubmit="return confirm('Delete this address?')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="dsh-del">Delete</button>
+                                </form>
+                            </div>
                         </div>
                     @endforeach
                 </div>

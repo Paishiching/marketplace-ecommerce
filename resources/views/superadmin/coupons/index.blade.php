@@ -144,8 +144,8 @@
                                         @endif
                                     </td>
                                     <td class="small">
-                                        <div>{{ $coupon->starts_at ? $coupon->starts_at->format('d M Y, h:i A') : 'Immediately' }}</div>
-                                        <div class="text-muted">→ {{ $coupon->expires_at ? $coupon->expires_at->format('d M Y, h:i A') : 'No expiry' }}</div>
+                                        <div>{{ $coupon->starts_at ? $coupon->starts_at->copy()->timezone('Asia/Dhaka')->format('d M Y, h:i A') : 'Immediately' }}</div>
+                                        <div class="text-muted">→ {{ $coupon->expires_at ? $coupon->expires_at->copy()->timezone('Asia/Dhaka')->format('d M Y, h:i A') : 'No expiry' }}</div>
                                     </td>
                                     <td>
                                         <span class="badge {{ $coupon->state_badge }} text-capitalize">{{ $coupon->state }}</span>

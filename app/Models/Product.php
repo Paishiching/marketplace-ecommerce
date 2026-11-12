@@ -22,6 +22,8 @@ class Product extends Model
         'name',
         'slug',
         'sku',
+        'model_number',
+        'warranty',
         'short_description',
         'description',
         'price',
@@ -339,5 +341,10 @@ class Product extends Model
     public function offerImages()
     {
         return $this->hasMany(ProductOfferImage::class, 'product_id')->orderBy('sort_order');
+    }
+
+    public function productEmiPlans()
+    {
+        return $this->hasMany(ProductEmiPlan::class)->orderBy('sort_order')->orderBy('tenure_months');
     }
 }

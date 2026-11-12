@@ -14,6 +14,7 @@ class ProductController extends Controller
             'category', 'subCategory', 'brand', 'vendor',
             'productImages', 'colorValues', 'sizeValues',
             'productVariants', 'reviews',
+            'productSpecifications', 'productEmiPlans',
         ]);
 
         // "You Might Also Like" — একই category থেকে random কিছু প্রোডাক্ট, বর্তমানটা বাদ দিয়ে

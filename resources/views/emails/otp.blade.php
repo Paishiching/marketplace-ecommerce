@@ -18,15 +18,11 @@
 
             <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;border-top:5px solid #fd6801;">
 
-                {{-- Logo --}}
+                {{-- Text brand avoids a broken remote logo in some inboxes. --}}
                 <tr>
                     <td align="center" style="padding:28px 20px 10px;">
                         <a href="{{ config('app.url') }}" style="text-decoration:none;">
-                            @if(!empty($logoUrl))
-                                <img src="{{ $logoUrl }}" alt="{{ $siteName }}" style="max-height:60px;width:auto;height:auto;border:0;display:block;">
-                            @else
-                                <span style="font-size:24px;font-weight:700;color:#2a3582;">{{ $siteName }}</span>
-                            @endif
+                            <span style="font-size:24px;font-weight:700;color:#2a3582;">{{ $siteName }}</span>
                         </a>
                     </td>
                 </tr>
@@ -35,7 +31,7 @@
                 <tr>
                     <td style="padding:10px 32px 8px;color:#2a3582;font-size:15px;line-height:1.7;">
                         <h2 style="margin:10px 0 12px;font-size:20px;color:#2a3582;">Hello!</h2>
-                        <p style="margin:0 0 6px;">Use this code to verify your account:</p>
+                        <p style="margin:0 0 6px;">Use this 6-digit code to verify your account:</p>
                     </td>
                 </tr>
 
@@ -47,7 +43,7 @@
                 </tr>
                 <tr>
                     <td align="center" style="padding:6px 32px 0;color:#6b7280;font-size:12px;">
-                        Tap the code to select it, then press Copy.
+                        In Gmail, tap Copy code if shown. Then return to Buydor and tap Paste code.
                     </td>
                 </tr>
 

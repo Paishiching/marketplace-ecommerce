@@ -106,6 +106,8 @@ Route::group([], function () {
     Route::get('/policy/faq', [PolicyController::class, 'faq'])->name('policy.faq');
 
     Route::get('/checkout-index', [CheckoutController::class, 'index'])->name('checkout.index');
+    Route::post('/checkout/coupon/apply', [CheckoutController::class, 'applyCoupon'])->name('checkout.coupon.apply');
+    Route::post('/checkout/coupon/remove', [CheckoutController::class, 'removeCoupon'])->name('checkout.coupon.remove');
     Route::post('/checkout/shipping-cost', [CheckoutController::class, 'shippingCost'])->name('checkout.shipping-cost');
     Route::post('/checkout/place-order', [CheckoutController::class, 'store'])->name('checkout.store');
 

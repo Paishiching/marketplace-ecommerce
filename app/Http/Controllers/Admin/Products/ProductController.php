@@ -35,6 +35,8 @@ class ProductController extends Controller
             'name' => ['required', 'string', 'max:191'],
             'slug' => ['nullable', 'string', 'max:191', Rule::unique('products', 'slug')],
             'sku' => ['nullable', 'string', 'max:100', Rule::unique('products', 'sku')],
+            'model_number' => ['nullable', 'string', 'max:150'],
+            'warranty' => ['nullable', 'string', 'max:190'],
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'sub_category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('parent_id', $request->input('category_id'))],
             'brand_id' => ['nullable', 'integer', 'exists:brands,id'],

@@ -1,6 +1,7 @@
 @php
     $navSlides = $navDeals['items'] ?? [];
     $navHasMore = $navDeals['has_more'] ?? false;
+    $navWhatsapp = preg_replace('/[^0-9]/', '', (string) ($site->whatsapp_number ?? ''));
 @endphp
 
 <nav class="eb-bottom-nav eb-mobile-only" aria-label="Mobile navigation">
@@ -34,6 +35,9 @@
                     </a>
                 </div>
             </div>
+            <a class="eb-bn-deal-chat" id="ebDealChat" href="https://wa.me/{{ $navWhatsapp }}?text={{ rawurlencode('Hello Buydor BD, I want to know more about '.$firstNavSlide['name'].'. '.url('/products-details/'.$firstNavSlide['slug'])) }}" target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp about {{ $firstNavSlide['name'] }}">
+                <span>Chat Now</span>
+            </a>
         </div>
     @else
         {{-- Product na thakle ager Hot Deals button --}}
@@ -71,6 +75,8 @@
     .eb-bn-deal{position:relative;height:100%;display:flex;justify-content:center}
     .eb-bn-deal-ring{position:absolute;top:-24px;width:66px;height:66px;border-radius:50%;background:#fff;box-shadow:0 -3px 10px rgba(var(--eb-navy-rgb),.15);display:flex;align-items:center;justify-content:center}
     .eb-bn-deal-win{position:relative;width:56px;height:56px;border-radius:50%;overflow:hidden;background:#fff;border:2px solid var(--eb-orange)}
+    .eb-bn-deal-chat{position:absolute;top:39px;left:50%;z-index:5;transform:translateX(-50%);display:inline-flex;align-items:center;justify-content:center;width:max-content;max-width:calc(20vw - 4px);height:22px;padding:0 8px;border:1px solid #a9dfbb;border-radius:999px;background:#effbf3;color:#168447;font-size:9px;font-weight:700;line-height:1;text-decoration:none;white-space:nowrap;box-shadow:0 1px 4px rgba(14,90,47,.12)}
+    .eb-bn-deal-chat:hover{background:#e4f7eb;color:#0c7138}
 
     .eb-bn-deal .eb-bn-slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#fff;opacity:0;transform:translateY(100%);transition:transform .5s ease,opacity .5s ease}
     .eb-bn-deal .eb-bn-slide img{width:100%;height:100%;object-fit:contain;padding:5px;display:block}
@@ -100,6 +106,13 @@
             var image = slide.querySelector('img');
             image.src = item.image;
             image.alt = item.name || 'Product';
+            var chat = document.getElementById('ebDealChat');
+            if (chat) {
+                var productUrl = slide.href;
+                var message = 'Hello Buydor BD, I want to know more about ' + (item.name || 'this product') + '. ' + productUrl;
+                chat.href = 'https://wa.me/{{ $navWhatsapp }}?text=' + encodeURIComponent(message);
+                chat.setAttribute('aria-label', 'Chat on WhatsApp about ' + (item.name || 'this product'));
+            }
         }
 
         function loadMore() {

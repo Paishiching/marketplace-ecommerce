@@ -38,11 +38,12 @@
         html,body{max-width:100%;overflow-x:hidden} img,video,iframe{max-width:100%} .container,.row,[class*="col-"]{min-width:0}
         .eb-search .eb-image-search-link{align-self:stretch;height:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding-top:4px;line-height:1;flex:0 0 42px}
         .eb-search .eb-image-search-link svg{display:block;width:21px;height:21px;flex:none}
-        @media(max-width:767px){body{padding-bottom:62px}.container{width:100%;padding-left:14px;padding-right:14px}.table-responsive{max-width:100%;overflow-x:auto}.modal-dialog{margin:10px}.eb-bottom-nav{padding-bottom:env(safe-area-inset-bottom)}}
+        body.is-product-detail .eb-bottom-nav{display:none!important}
+        @media(max-width:767px){body{padding-bottom:62px}body.is-product-detail{padding-bottom:0!important}.container{width:100%;padding-left:14px;padding-right:14px}.table-responsive{max-width:100%;overflow-x:auto}.modal-dialog{margin:10px}.eb-bottom-nav{padding-bottom:env(safe-area-inset-bottom)}}
     </style>
     </head>
 
-<body>
+<body class="{{ request()->routeIs('products.details') ? 'is-product-detail' : '' }}">
 
 <!-- Header Section Start From Here -->
 @include('layouts.frontend.header')

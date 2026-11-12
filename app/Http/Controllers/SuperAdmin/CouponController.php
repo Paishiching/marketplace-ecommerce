@@ -78,6 +78,7 @@ class CouponController extends Controller
 
         $validated['code'] = strtoupper($validated['code']);
         $validated['status'] = $request->boolean('status');
+        $validated = $this->storeDhakaDateTimesAsUtc($validated);
 
         Coupon::create($validated);
 
@@ -111,6 +112,7 @@ class CouponController extends Controller
 
         $validated['code'] = strtoupper($validated['code']);
         $validated['status'] = $request->boolean('status');
+        $validated = $this->storeDhakaDateTimesAsUtc($validated);
 
         $coupon->update($validated);
 
@@ -122,5 +124,17 @@ class CouponController extends Controller
         $coupon->delete();
 
         return redirect()->route('superadmin.coupons.index')->with('success', 'Coupon deleted successfully.');
+    }
+
+    /** datetime-local inputs represent Bangladesh time; persist their UTC equivalent. */
+    private function storeDhakaDateTimesAsUtc(array $validated): array
+    {
+        foreach (['starts_at', 'expires_at'] as $field) {
+            if (! empty($validated[$field])) {
+                $validated[$field] = Carbon::parse($validated[$field], 'Asia/Dhaka')->utc()->format('Y-m-d H:i:s');
+            }
+        }
+
+        return $validated;
     }
 }

@@ -31,6 +31,7 @@ class SearchController extends Controller
                 $query->where(function ($sub) use ($q) {
                     $sub->where('name', 'like', "%{$q}%")
                         ->orWhere('sku', 'like', "%{$q}%")
+                        ->orWhere('model_number', 'like', "%{$q}%")
                         ->orWhere('short_description', 'like', "%{$q}%")
                         ->orWhereHas('brand', function ($brand) use ($q) {
                             $brand->where('name', 'like', "%{$q}%");

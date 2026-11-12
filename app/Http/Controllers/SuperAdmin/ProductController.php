@@ -67,6 +67,8 @@ class ProductController extends Controller
             'name'                       => ['required', 'string', 'max:255'],
             'slug'                       => ['nullable', 'string', 'max:255'],
             'sku'                        => ['nullable', 'string', 'max:100', 'unique:products,sku'],
+            'model_number'               => ['nullable', 'string', 'max:150'],
+            'warranty'                   => ['nullable', 'string', 'max:190'],
             'short_description'          => ['nullable', 'string'],
             'description'                => ['nullable', 'string'],
             'category_id'                => ['required', 'exists:categories,id'],
@@ -104,6 +106,11 @@ class ProductController extends Controller
             'sponsored_video_url'        => ['nullable', 'url', 'max:500'],
             'offer_images'               => ['nullable', 'array', 'max:5'],
             'offer_images.*'             => ['image', 'max:2048'],
+            'emi_plans'                  => ['nullable', 'array', 'max:40'],
+            'emi_plans.*.bank_name'      => ['required', 'string', 'max:150'],
+            'emi_plans.*.tenure_months'  => ['required', 'integer', 'min:1', 'max:120'],
+            'emi_plans.*.fee_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
+            'emi_plans.*.is_active'      => ['nullable', 'boolean'],
         ]);
 
         $newOfferPaths = [];
@@ -121,6 +128,8 @@ class ProductController extends Controller
                 'name'                => $validated['name'],
                 'slug'                => $this->uniqueSlug($validated['slug'] ?: $validated['name']),
                 'sku'                 => $validated['sku'] ?? null,
+                'model_number'        => $validated['model_number'] ?? null,
+                'warranty'            => $validated['warranty'] ?? null,
                 'description'         => $validated['description'] ?? null,
                 'price'               => $validated['price'],
                 'discount_price'      => $validated['discount_price'] ?? null,
@@ -154,6 +163,7 @@ class ProductController extends Controller
             $this->syncProductAttributes($product, $validated['colors'] ?? [], 'Color');
             $this->syncProductAttributes($product, $validated['sizes'] ?? [], 'Size');
             $this->syncProductSpecifications($product, $validated['specifications'] ?? []);
+            $this->syncProductEmiPlans($product, $validated['emi_plans'] ?? []);
 
             if ($request->boolean('has_variants') && ! empty($validated['variants'])) {
                 $this->syncProductVariants($product, $validated['variants']);
@@ -194,6 +204,7 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
+        $product->load('productEmiPlans');
         $product->load(['productImages', 'colorValues', 'sizeValues', 'productVariants', 'productSpecifications', 'offerImages']);
 
         $categories = Category::whereNull('parent_id')->where('status', 1)->get(['id', 'name']);
@@ -220,6 +231,8 @@ class ProductController extends Controller
             'name'                       => ['required', 'string', 'max:255'],
             'slug'                       => ['nullable', 'string', 'max:255', 'unique:products,slug,' . $product->id],
             'sku'                        => ['nullable', 'string', 'max:100', 'unique:products,sku,' . $product->id],
+            'model_number'               => ['nullable', 'string', 'max:150'],
+            'warranty'                   => ['nullable', 'string', 'max:190'],
             'short_description'          => ['nullable', 'string'],
             'description'                => ['nullable', 'string'],
             'category_id'                => ['required', 'exists:categories,id'],
@@ -260,6 +273,11 @@ class ProductController extends Controller
             'offer_images.*'             => ['image', 'max:2048'],
             'remove_offer_images'        => ['nullable', 'array'],
             'remove_offer_images.*'      => ['integer'],
+            'emi_plans'                  => ['nullable', 'array', 'max:40'],
+            'emi_plans.*.bank_name'      => ['required', 'string', 'max:150'],
+            'emi_plans.*.tenure_months'  => ['required', 'integer', 'min:1', 'max:120'],
+            'emi_plans.*.fee_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
+            'emi_plans.*.is_active'      => ['nullable', 'boolean'],
         ]);
 
         // Offer image : moot 5 tar beshi rakha jabe na (ager thaka - remove kora + notun)
@@ -294,6 +312,8 @@ class ProductController extends Controller
                 'name'                => $validated['name'],
                 'slug'                => $validated['slug'] ?? $product->slug,
                 'sku'                 => $validated['sku'] ?? null,
+                'model_number'        => $validated['model_number'] ?? null,
+                'warranty'            => $validated['warranty'] ?? null,
                 'description'         => $validated['description'] ?? null,
                 'price'               => $validated['price'],
                 'discount_price'      => $validated['discount_price'] ?? null,
@@ -342,6 +362,7 @@ class ProductController extends Controller
             $this->syncProductAttributes($product, $validated['colors'] ?? [], 'Color');
             $this->syncProductAttributes($product, $validated['sizes'] ?? [], 'Size');
             $this->syncProductSpecifications($product, $validated['specifications'] ?? []);
+            $this->syncProductEmiPlans($product, $validated['emi_plans'] ?? []);
 
             if ($request->boolean('has_variants') && ! empty($validated['variants'])) {
                 $this->syncProductVariants($product, $validated['variants']);
@@ -495,6 +516,20 @@ class ProductController extends Controller
                 'name'       => $name,
                 'value'      => $value !== '' ? $value : null,
                 'sort_order' => $order++,
+            ]);
+        }
+    }
+
+    private function syncProductEmiPlans(Product $product, array $rows): void
+    {
+        $product->productEmiPlans()->delete();
+        foreach (array_values($rows) as $index => $row) {
+            $product->productEmiPlans()->create([
+                'bank_name' => trim($row['bank_name']),
+                'tenure_months' => (int) $row['tenure_months'],
+                'fee_percentage' => (float) $row['fee_percentage'],
+                'is_active' => (bool) ($row['is_active'] ?? true),
+                'sort_order' => $index,
             ]);
         }
     }
